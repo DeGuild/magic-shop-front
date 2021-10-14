@@ -1,9 +1,7 @@
 <template>
+  <div class="shopfront"></div>
   <div class="dialog">
-    <div
-      class="dialog-text"
-      v-bind:class="{ smaller: state.dialogStyle }"
-    >
+    <div class="dialog-text" v-bind:class="{ smaller: state.dialogStyle }">
       {{ state.dialog }}
     </div>
   </div>
@@ -20,7 +18,7 @@ export default defineComponent({
     const store = useStore();
     const state = reactive({
       dialog: computed(() => store.state.User.dialog),
-      dialogStyle: computed(() => (store.state.User.dialog.length > 45)),
+      dialogStyle: computed(() => store.state.User.dialog.length > 45),
     });
 
     return {
@@ -30,6 +28,16 @@ export default defineComponent({
 });
 </script>
 <style scoped lang="scss">
+.shopfront{
+  position: absolute;
+  width: 100vw;
+  height: 22.45vw;
+  top: 0vw;
+  left: 0vw;
+
+  background: url('../../assets/magic-shop-bg.png');
+  background-size: cover;
+}
 .dialog {
   position: absolute;
   width: 68vw;
