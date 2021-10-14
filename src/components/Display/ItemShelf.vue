@@ -26,11 +26,29 @@
     <button class="navButton buy" v-on:click="dummy()">Buy</button>
     <div class="text price">30 DGT</div>
   </div>
-  <button class="navButton previous" v-on:click="dummy()">&#62;</button>
-  <button class="navButton exam" v-on:click="dummy()">Exam Only</button>
-  <button class="navButton both" v-on:click="dummy()">Both</button>
-  <button class="navButton all" v-on:click="dummy()">All</button>
-  <button class="navButton" v-on:click="dummy()">&#60;</button>
+  <button class="navButton previous" v-on:click="dummy()">&#60;</button>
+  <button
+    class="navButton exam"
+    :class="{ disabled: !state.showExam }"
+    v-on:click="showExam"
+  >
+    Exam Only
+  </button>
+  <button
+    class="navButton both"
+    :class="{ disabled: !state.showBoth }"
+    v-on:click="showBoth"
+  >
+    Both
+  </button>
+  <button
+    class="navButton all"
+    :class="{ disabled: !state.showAll }"
+    v-on:click="showAll"
+  >
+    All
+  </button>
+  <button class="navButton" v-on:click="dummy()">&#62;</button>
 </template>
 
 <script>
@@ -40,6 +58,10 @@ export default defineComponent({
   name: 'ItemShelf',
   setup() {
     const state = reactive({
+      showBoth: true,
+      showExam: false,
+      showAll: false,
+      pageIdx: 0,
       imageSelected: 'https://placekitten.com/803/800',
       images: [
         'https://placekitten.com/801/800',
@@ -140,10 +162,28 @@ export default defineComponent({
     function choosing(imageIdx) {
       state.imageSelected = state.images[imageIdx];
     }
+    function showAll() {
+      state.showAll = true;
+      state.showExam = false;
+      state.showBoth = false;
+    }
+    function showBoth() {
+      state.showBoth = true;
+      state.showExam = false;
+      state.showAll = false;
+    }
+    function showExam() {
+      state.showExam = true;
+      state.showBoth = false;
+      state.showAll = false;
+    }
     return {
       state,
       dummy,
       choosing,
+      showAll,
+      showBoth,
+      showExam,
     };
   },
 });
@@ -213,7 +253,8 @@ export default defineComponent({
 
   width: 5.171vw;
   height: 2.727vw;
-  left: 47.292vw;
+  left: 90.292vw;
+
   top: 49.635vw;
   position: absolute;
 
@@ -243,22 +284,58 @@ export default defineComponent({
     0px 3px 4px rgba(123, 12, 12, 0.12), 0px 1px 5px rgba(136, 13, 13, 0.2);
 
   &.previous {
-    left: 90.292vw;
+    left: 47.292vw;
   }
 
   &.exam {
     width: 10.171vw;
     left: 54.292vw;
+    background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.25) 0%,
+        rgba(255, 255, 255, 0) 100%
+      ),
+      #ffae02;
+    &.disabled {
+      background: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0.25) 0%,
+          rgba(255, 255, 255, 0) 100%
+        ),
+        #a7a7a7;
+    }
   }
 
   &.both {
     width: 10.171vw;
     left: 66.292vw;
+    &.disabled {
+      background: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0.25) 0%,
+          rgba(255, 255, 255, 0) 100%
+        ),
+        #a7a7a7;
+    }
   }
 
   &.all {
     width: 10.171vw;
     left: 78.292vw;
+    background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.25) 0%,
+        rgba(255, 255, 255, 0) 100%
+      ),
+      #58e7f0;
+    &.disabled {
+      background: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0.25) 0%,
+          rgba(255, 255, 255, 0) 100%
+        ),
+        #a7a7a7;
+    }
   }
 
   &.buy {
@@ -274,6 +351,14 @@ export default defineComponent({
       #ffae02;
     background-blend-mode: soft-light, normal;
     border-radius: 2vw;
+    &.disabled {
+      background: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0.25) 0%,
+          rgba(255, 255, 255, 0) 100%
+        ),
+        #a7a7a7;
+    }
   }
 }
 
