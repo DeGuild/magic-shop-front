@@ -41,19 +41,21 @@
     </button>
     <button class="navButton" v-on:click="dummy()">&#62;</button>
   </div>
-
-  <div class="background item-box">
-    <div class="background current-item-frame" />
-    <div class="image selected">
-      <img class="image selected display" :src="state.imageSelected" />
+  <div class="selection item">
+    <div class="background item-box">
+      <div class="background current-item-frame" />
+      <div class="image selected">
+        <img class="image selected display" :src="state.imageSelected" />
+      </div>
+      <div class="text">Introduction to Programming</div>
+      <div class="text own">Owned: 99999999</div>
+      <div class="text description">
+        This is a young cute cat. Bring it home so you can achieve eternal
+        happiness.
+      </div>
+      <button class="navButton buy" v-on:click="dummy()">Buy</button>
+      <div class="text price">30 DGT</div>
     </div>
-    <div class="text">Introduction to Programming</div>
-    <div class="text description">
-      This is a young cute cat. Bring it home so you can achieve eternal
-      happiness.
-    </div>
-    <button class="navButton buy" v-on:click="dummy()">Buy</button>
-    <div class="text price">30 DGT</div>
   </div>
 </template>
 
@@ -198,7 +200,12 @@ export default defineComponent({
 <style scoped lang="scss">
 .selection {
   top: 3.5vw;
+  left: -2vw;
   position: absolute;
+  &.item {
+    top: 0vw;
+    left: -3vw;
+  }
 }
 .image {
   width: 7.5vw;
@@ -376,7 +383,7 @@ export default defineComponent({
 .text {
   position: absolute;
   width: 20vw;
-  height: 7vw;
+  height: 6vw;
   left: 13vw;
   top: 4.5vw;
 
@@ -396,6 +403,7 @@ export default defineComponent({
 
   background: '';
   background-size: cover;
+  // background-color: red;
 
   &.price {
     left: 22vw;
@@ -405,6 +413,13 @@ export default defineComponent({
     font-size: 1vw;
     display: unset;
     text-align: right;
+  }
+
+  &.own {
+    position: absolute;
+    height: 2vw;
+    top: 10vw;
+    font-size: 1vw;
   }
 
   &.description {

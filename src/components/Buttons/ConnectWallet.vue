@@ -20,6 +20,7 @@ const Web3 = require('web3');
 /**
  * Using relative path, just clone the git beside this project directory and compile to run
  */
+// eslint-disable-next-line no-unused-vars
 const shopAddress = '0x09eE5D4916b0c937540F2A5a7fB2621564628Fbf';
 // const {
 //   skillCertificateABI,
