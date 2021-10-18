@@ -20,6 +20,7 @@ const Web3 = require('web3');
 /**
  * Using relative path, just clone the git beside this project directory and compile to run
  */
+const shopAddress = '0x09eE5D4916b0c937540F2A5a7fB2621564628Fbf';
 // const {
 //   skillCertificateABI,
 // } = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/
@@ -50,26 +51,26 @@ export default {
      * @param {address} nextToFetch The address we lastly fetched
      * @return {address[]} all certificates in the DeGuild system.
      */
-    // async function fetchAllMagicScrolls(nextToFetch) {
-    //   console.log(nextToFetch);
-    // let response = null;
-    // if (nextToFetch) {
-    //   response = await fetch(
-    //     `https://us-central1-deguild-2021.cloudfunctions.net/app/allCertificates/${nextToFetch}/next`,
-    //     { mode: 'cors' },
-    //   );
-    // } else {
-    //   response = await fetch(
-    //     'https://us-central1-deguild-2021.cloudfunctions.net/app/allCertificatesOnce',
-    //     { mode: 'cors' },
-    //   );
-    // }
+    async function fetchAllMagicScrolls(nextToFetch) {
+      console.log(nextToFetch);
+      let response = null;
+      if (nextToFetch) {
+        response = await fetch(
+          `https://us-central1-deguild-2021.cloudfunctions.net/app/allCertificates/${nextToFetch}/next`,
+          { mode: 'cors' },
+        );
+      } else {
+        response = await fetch(
+          'https://us-central1-deguild-2021.cloudfunctions.net/app/allCertificatesOnce',
+          { mode: 'cors' },
+        );
+      }
 
-    // state.certificateSet = await response.json();
-    // const next = state.certificateSet.result[state.certificateSet.result.length - 1];
-    // store.dispatch('User/setCertificateToFetch', next);
-    // return state.certificateSet;
-    // }
+      state.certificateSet = await response.json();
+      const next = state.certificateSet.result[state.certificateSet.result.length - 1];
+      store.dispatch('User/setCertificateToFetch', next);
+      return state.certificateSet;
+    }
 
     /**
      * Returns name of the address.
@@ -249,7 +250,7 @@ export default {
         state.primary = 'CONNECT WALLET';
       }
       await verifyNetwork();
-      // await fetchAllCertificates();
+      await fetchAllMagicScrolls();
 
       window.ethereum.on('accountsChanged', handleAccountsChanged);
       window.ethereum.on('chainChanged', handleChainChanged);
