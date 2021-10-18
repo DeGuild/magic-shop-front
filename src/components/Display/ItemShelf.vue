@@ -1,18 +1,47 @@
 <template>
-  <div class="background"></div>
-  <div v-for="imageIndex in 8" :key="imageIndex">
-    <div class="background frame" :style="state.stylesFrame[imageIndex]"></div>
+  <div class="selection">
+    <div class="background"></div>
+    <div v-for="imageIndex in 8" :key="imageIndex">
+      <div
+        class="background frame"
+        :style="state.stylesFrame[imageIndex]"
+      ></div>
 
-    <div class="image" :style="state.styles[imageIndex]">
-      <img
-        class="image display click"
-        :style="state.styles[imageIndex]"
-        :src="state.images[imageIndex]"
-        v-if="state.images[imageIndex]"
-        v-on:click="choosing(imageIndex)"
-      />
+      <div class="image" :style="state.styles[imageIndex]">
+        <img
+          class="image display click"
+          :style="state.styles[imageIndex]"
+          :src="state.images[imageIndex]"
+          v-if="state.images[imageIndex]"
+          v-on:click="choosing(imageIndex)"
+        />
+      </div>
     </div>
+    <button class="navButton previous" v-on:click="dummy()">&#60;</button>
+    <button
+      class="navButton exam"
+      :class="{ disabled: !state.showExam }"
+      v-on:click="showExam"
+    >
+      Exam Only
+    </button>
+    <button
+      class="navButton both"
+      :class="{ disabled: !state.showBoth }"
+      v-on:click="showBoth"
+    >
+      Both
+    </button>
+    <button
+      class="navButton all"
+      :class="{ disabled: !state.showAll }"
+      v-on:click="showAll"
+    >
+      All
+    </button>
+    <button class="navButton" v-on:click="dummy()">&#62;</button>
   </div>
+
   <div class="background item-box">
     <div class="background current-item-frame" />
     <div class="image selected">
@@ -26,29 +55,6 @@
     <button class="navButton buy" v-on:click="dummy()">Buy</button>
     <div class="text price">30 DGT</div>
   </div>
-  <button class="navButton previous" v-on:click="dummy()">&#60;</button>
-  <button
-    class="navButton exam"
-    :class="{ disabled: !state.showExam }"
-    v-on:click="showExam"
-  >
-    Exam Only
-  </button>
-  <button
-    class="navButton both"
-    :class="{ disabled: !state.showBoth }"
-    v-on:click="showBoth"
-  >
-    Both
-  </button>
-  <button
-    class="navButton all"
-    :class="{ disabled: !state.showAll }"
-    v-on:click="showAll"
-  >
-    All
-  </button>
-  <button class="navButton" v-on:click="dummy()">&#62;</button>
 </template>
 
 <script>
@@ -190,6 +196,10 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
+.selection {
+  top: 3.5vw;
+  position: absolute;
+}
 .image {
   width: 7.5vw;
   height: 7.5vw;
@@ -228,13 +238,14 @@ export default defineComponent({
   }
   &.item-box {
     position: absolute;
-    width: 29.063vw;
-    height: 32.016vw;
+    width: 35vw;
+    height: 40vw;
     left: 7vw;
-    top: 22.8vw;
+    top: 21vw;
 
     background: url('../../assets/itemDescription.png');
-    background-size: cover;
+    background-size: contain;
+    background-repeat: no-repeat;
   }
   &.current-item-frame {
     position: absolute;
@@ -340,8 +351,8 @@ export default defineComponent({
 
   &.buy {
     width: 11.615vw;
-    top: 25vw;
-    left: 15.4vw;
+    top: 30vw;
+    left: 20.4vw;
 
     background: linear-gradient(
         180deg,
@@ -364,10 +375,10 @@ export default defineComponent({
 
 .text {
   position: absolute;
-  width: 10vw;
-  height: 5.938vw;
-  left: 15vw;
-  top: 5.1vw;
+  width: 20vw;
+  height: 7vw;
+  left: 13vw;
+  top: 4.5vw;
 
   font-family: Poppins;
   font-weight: bold;
@@ -375,8 +386,8 @@ export default defineComponent({
   line-height: 1.927vw;
 
   display: flex;
+  justify-content: center;
   align-items: center;
-  text-align: center;
   color: #ffffff;
 
   text-overflow: ellipsis;
@@ -387,8 +398,10 @@ export default defineComponent({
   background-size: cover;
 
   &.price {
-    left: 16.8vw;
-    top: 28vw;
+    left: 22vw;
+    top: 33.5vw;
+    width: 10vw;
+    height: 2vw;
     font-size: 1vw;
     display: unset;
     text-align: right;
@@ -396,10 +409,10 @@ export default defineComponent({
 
   &.description {
     position: absolute;
-    width: 23.865vw;
-    height: 18.542vw;
+    width: 30.5vw;
+    height: 15vw;
     left: 2.3vw;
-    top: 7vw;
+    top: 14vw;
     font-size: 1.1vw;
   }
 }

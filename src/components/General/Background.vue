@@ -31,7 +31,7 @@ export default defineComponent({
 .shopfront{
   position: absolute;
   width: 100vw;
-  height: 22.45vw;
+  height: 19vw;
   top: 0vw;
   left: 0vw;
 
@@ -43,7 +43,7 @@ export default defineComponent({
   width: 68vw;
   height: 13.1vw;
   left: 27.24vw;
-  top: 5.417vw;
+  top: 4vw;
 
   background: url('../../assets/dialogue.png');
   background-size: cover;
@@ -72,7 +72,7 @@ export default defineComponent({
 .npc {
   position: absolute;
   width: 32vw;
-  height: 20vw;
+  height: 16.5vw;
   left: 0vw;
   top: 2.45vw;
 
