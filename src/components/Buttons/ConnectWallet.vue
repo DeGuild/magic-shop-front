@@ -21,7 +21,7 @@ const Web3 = require('web3');
  * Using relative path, just clone the git beside this project directory and compile to run
  */
 // eslint-disable-next-line no-unused-vars
-const shopAddress = '0x656E13DcfBF03D1B9CC5716FB3CE47793De4ac76';
+const shopAddress = '0x1B362371f11cAA26B1A993f7Ffd711c0B9966f70';
 // const {
 //   skillCertificateABI,
 // } = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/
@@ -110,15 +110,15 @@ export default {
      * @param {int} tokenId The tokenId of any shop using the interface given
      * @return {bool} purchasablility.
      */
-    async function isPurchaseable(tokenId) {
+    async function isPurchaseable(tokenId, address) {
       const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
       try {
         const caller = await magicShop.methods
-          .isPurchasableScroll(tokenId)
+          .isPurchasableScroll(tokenId, address)
           .call();
         return caller;
       } catch (error) {
-        // console.error('Not purchasable');
+        console.error(tokenId);
         return false;
       }
     }
@@ -183,7 +183,10 @@ export default {
      */
     async function tokenSetup(data) {
       // console.log(data.tokenId);
-      const purchaseable = await isPurchaseable(data.tokenId);
+      const purchaseable = await isPurchaseable(
+        data.tokenId,
+        store.state.User.user,
+      );
       const onChain = await scrollTypeInfo(data.tokenId);
 
       if (onChain[0]) {
@@ -226,7 +229,10 @@ export default {
           state.primary = connectedAddress;
           const ownership = await isOwner(accounts.result[0]);
 
-          store.dispatch('User/setUser', accounts.result[0]);
+          store.dispatch(
+            'User/setUser',
+            web3.utils.toChecksumAddress(accounts.result[0]),
+          );
           store.dispatch('User/setOwner', ownership);
           store.dispatch('User/setFetching', true);
 
@@ -238,7 +244,9 @@ export default {
               state.magicScrollsData.map(tokenSetup),
             );
 
-            toAdd = toAdd.concat(tokenAvailability);
+            toAdd = toAdd.concat(
+              tokenAvailability.filter((obj) => obj !== null),
+            );
 
             store.dispatch('User/setMagicScrolls', toAdd);
             if (store.state.User.scrollToFetch) {
@@ -252,7 +260,7 @@ export default {
           }
 
           store.dispatch('User/setFetching', false);
-          console.log(store.state.User.scrollList);
+          // console.log(store.state.User.scrollList);
 
           return true;
         } catch (error) {
