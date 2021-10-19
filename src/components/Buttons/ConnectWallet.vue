@@ -21,16 +21,14 @@ const Web3 = require('web3');
  * Using relative path, just clone the git beside this project directory and compile to run
  */
 // eslint-disable-next-line no-unused-vars
-const shopAddress = '0x09eE5D4916b0c937540F2A5a7fB2621564628Fbf';
+const shopAddress = '0x656E13DcfBF03D1B9CC5716FB3CE47793De4ac76';
 // const {
 //   skillCertificateABI,
 // } = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/
 // SkillCertificates/ISkillCertificate.sol/ISkillCertificate.json');
-// const {
-//   magicScrollABI,
-// } = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/
-// contracts/MagicShop/IMagicScrolls.sol/IMagicScrolls.json');
-
+const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/IMagicScrolls.sol/IMagicScrolls.json').abi;
+const ownerABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/@openzeppelin/contracts/access/Ownable.sol/Ownable.json').abi;
+// DeGuild-MG-CS-Token-contracts/artifacts/@openzeppelin/contracts/access/Ownable.sol/Ownable.json
 export default {
   name: 'ConnectWallet',
   setup() {
@@ -42,7 +40,7 @@ export default {
     const state = reactive({
       primary: 'SOMETHING WENT WRONG',
       network: '',
-      certificateSet: null,
+      magicScrollsData: [],
     });
     const web3 = new Web3(Web3.givenProvider || 'ws://localhost:8545');
 
@@ -53,51 +51,95 @@ export default {
      * @return {address[]} all certificates in the DeGuild system.
      */
     async function fetchAllMagicScrolls(nextToFetch) {
-      console.log(nextToFetch);
+      // console.log(nextToFetch);
       let response = null;
       if (nextToFetch) {
         response = await fetch(
-          `https://us-central1-deguild-2021.cloudfunctions.net/app/allCertificates/${nextToFetch}/next`,
+          `https://us-central1-deguild-2021.cloudfunctions.net/shop/allMagicScrolls/${shopAddress}/next/${nextToFetch}`,
           { mode: 'cors' },
         );
       } else {
         response = await fetch(
-          'https://us-central1-deguild-2021.cloudfunctions.net/app/allCertificatesOnce',
+          `https://us-central1-deguild-2021.cloudfunctions.net/shop/allMagicScrolls/${shopAddress}`,
           { mode: 'cors' },
         );
       }
 
-      state.certificateSet = await response.json();
-      const next = state.certificateSet.result[state.certificateSet.result.length - 1];
-      store.dispatch('User/setCertificateToFetch', next);
-      return state.certificateSet;
+      const magicScrolls = await response.json();
+      // eslint-disable-next-line max-len
+      const sortedById = magicScrolls.sort((a, b) => (parseInt(a.tokenId, 10) > parseInt(b.tokenId, 10) ? 1 : -1));
+      // console.log(sortedById);
+
+      const next = sortedById.length > 0
+        ? sortedById[sortedById.length - 1].tokenId
+        : null;
+      // console.log(next);
+      store.dispatch('User/setMagicScrollToFetch', next);
+      // console.log(magicScrolls);
+      // console.log(next);
+      return magicScrolls;
     }
 
     /**
-     * Returns name of the address.
+     * Returns data of the token.
      *
-     * @param {address} address The address of any contract using the interface given
-     * @return {string} name of the contract.
+     * @param {int} tokenId The address of any contract using the interface given
+     * @return {object} token object that looks like this
+     * { uint256 - tokenId      : 3
+     *   uint256 - price        : 20
+     *   address - prerequisite : 0x0000000000000000000000000000000000000000
+     *   bool - hasLesson       : false
+     *   bool - hasPrerequisite : false
+     *   bool - available       : true}
      */
-    // async function getName(address) {
-    //   const certificateManager = new web3.eth.Contract(magicScrollABI, address);
-    //   const caller = await certificateManager.methods.name().call();
-    //   return caller;
-    // }
+    async function scrollTypeInfo(tokenId) {
+      const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
+
+      try {
+        const caller = await magicShop.methods.scrollTypeInfo(tokenId).call();
+        return caller;
+      } catch (error) {
+        // console.error('Not purchasable');
+        return {};
+      }
+    }
 
     /**
-     * Returns verification of the certificate
+     * Returns whether user can purchase this token
      *
-     * @param {address} address The address of any contract using the interface given
-     * @return {bool} status of verification.
+     * @param {int} tokenId The tokenId of any shop using the interface given
+     * @return {bool} purchasablility.
      */
-    // async function hasCertificate(address) {
-    //   const certificateManager = new web3.eth.Contract(skillCertificateABI, address);
-    //   const caller = await certificateManager.methods
-    //     .verify(store.state.User.user)
-    //     .call();
-    //   return caller;
-    // }
+    async function isPurchaseable(tokenId) {
+      const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
+      try {
+        const caller = await magicShop.methods
+          .isPurchasableScroll(tokenId)
+          .call();
+        return caller;
+      } catch (error) {
+        // console.error('Not purchasable');
+        return false;
+      }
+    }
+
+    /**
+     * Returns whether user is the owner of this shop
+     *
+     * @param {address} address ethereum address
+     * @return {bool} ownership.
+     */
+    async function isOwner(address) {
+      const magicShop = new web3.eth.Contract(ownerABI, shopAddress);
+      const realAddress = web3.utils.toChecksumAddress(address);
+      try {
+        const caller = await magicShop.methods.owner().call();
+        return caller === realAddress;
+      } catch (error) {
+        // console.error('Not purchasable');
+        return false;
+      }
+    }
 
     /**
      * Returns verification of the Rinkeby Network
@@ -139,24 +181,29 @@ export default {
      * @param {address} address The address of any contract using the interface given
      * @return {certificate[]} array of the certificates.
      */
-    // async function userCertificateChecker(address) {
-    //   const hasCertificateResult = await hasCertificate(address);
-    //   const certificateArray = [];
+    async function tokenSetup(data) {
+      // console.log(data.tokenId);
+      const purchaseable = await isPurchaseable(data.tokenId);
+      const onChain = await scrollTypeInfo(data.tokenId);
 
-    //   if (hasCertificateResult) {
-    //     const name = await getName(address);
-    //     const imageUrl = await fetch(
-    //       `https://us-central1-deguild-2021.cloudfunctions.net/app/readCertificate/${address}`,
-    //       { mode: 'cors' },
-    //     );
-
-    //     const dataUrl = await imageUrl.json();
-    //     certificateArray.push(name);
-    //     certificateArray.push(dataUrl);
-    //     certificateArray.push(address);
-    //   }
-    //   return certificateArray;
-    // }
+      if (onChain[0]) {
+        const token = {
+          tokenId: data.tokenId,
+          url: data.url,
+          name: data.name,
+          courseId: data.courseId,
+          description: data.description,
+          purchaseable,
+          price: onChain[1],
+          prerequisite: onChain[2],
+          hasLesson: onChain[3],
+          hasPrerequisite: onChain[4],
+          available: onChain[5],
+        };
+        return token;
+      }
+      return null;
+    }
 
     /**
      * Connect user to the dapp
@@ -177,32 +224,39 @@ export default {
             accountLength,
           )}`;
           state.primary = connectedAddress;
+          const ownership = await isOwner(accounts.result[0]);
+
           store.dispatch('User/setUser', accounts.result[0]);
-          // let next = state.certificateSet.result.length;
-          // let toAdd = [];
+          store.dispatch('User/setOwner', ownership);
+          store.dispatch('User/setFetching', true);
+
+          let toAdd = [];
           // const userCertificates = [];
-          // store.dispatch('User/setFetching', true);
 
-          // while (next > 0) {
-          //   const cersVerified = await Promise.all(
-          //     state.certificateSet.result.map(userCertificateChecker),
-          //   );
+          while (state.magicScrollsData.length > 0) {
+            const tokenAvailability = await Promise.all(
+              state.magicScrollsData.map(tokenSetup),
+            );
 
-          //   toAdd = toAdd.concat(cersVerified);
-          //   toAdd.forEach((element) => {
-          //     if (element.length > 0) userCertificates.push(element);
-          //   });
-          //   // console.log(toAdd);
+            toAdd = toAdd.concat(tokenAvailability);
 
-          //   store.dispatch('User/setCertificates', userCertificates);
-          //   next = await fetchAllCertificates(
-          //     store.state.User.certificateToFetch,
-          //   );
-          // }
-          // store.dispatch('User/setFetching', false);
+            store.dispatch('User/setMagicScrolls', toAdd);
+            if (store.state.User.scrollToFetch) {
+              const scrollsData = await fetchAllMagicScrolls(
+                store.state.User.scrollToFetch,
+              );
+              state.magicScrollsData = scrollsData;
+            } else {
+              state.magicScrollsData = [];
+            }
+          }
+
+          store.dispatch('User/setFetching', false);
+          console.log(store.state.User.scrollList);
 
           return true;
         } catch (error) {
+          console.log(error);
           state.primary = 'ERROR!';
           // route.push('/no-provider');
         }
@@ -251,7 +305,8 @@ export default {
         state.primary = 'CONNECT WALLET';
       }
       await verifyNetwork();
-      await fetchAllMagicScrolls();
+      const scrollsData = await fetchAllMagicScrolls();
+      state.magicScrollsData = scrollsData;
 
       window.ethereum.on('accountsChanged', handleAccountsChanged);
       window.ethereum.on('chainChanged', handleChainChanged);

@@ -30,7 +30,7 @@ export default defineComponent({
 <style scoped lang="scss">
 .shopfront{
   position: absolute;
-  width: 100vw;
+  width: 99.215vw;
   height: 19vw;
   top: 0vw;
   left: 0vw;

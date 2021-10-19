@@ -27,8 +27,8 @@ export default {
   setup() {
     const store = useStore();
     const user = computed(() => store.state.User.user);
-    console.log(store.state.User.user);
-    console.log(user);
+    // console.log(store.state.User.user);
+    // console.log(user);
     return { user };
   },
 };
