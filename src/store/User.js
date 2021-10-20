@@ -9,6 +9,7 @@ export const UserModule = {
     selectedScroll: null,
     scrollToFetch: null,
     fetching: false,
+    magicScrollPage: 0,
     dialog: "Welcome to Mona's shop",
   },
   mutations: {

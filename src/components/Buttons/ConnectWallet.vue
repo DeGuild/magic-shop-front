@@ -249,6 +249,8 @@ export default {
           )}`;
           state.primary = connectedAddress;
           const ownership = await isOwner(accounts.result[0]);
+          const approve = await hasApproval(accounts.result[0]);
+          let toAdd = [];
 
           store.dispatch(
             'User/setUser',
@@ -261,8 +263,6 @@ export default {
           );
           store.dispatch('User/setFetching', true);
 
-          let toAdd = [];
-          const approve = await hasApproval(store.state.User.user);
           // console.log(approve);
           store.dispatch('User/setApproval', approve);
           if (!approve) {
@@ -295,7 +295,7 @@ export default {
           }
 
           store.dispatch('User/setFetching', false);
-          // console.log(store.state.User.scrollList);
+          console.log(store.state.User.scrollList);
           store.dispatch(
             'User/setDialog',
             'Great! So, what would you like to buy?',
