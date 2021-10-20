@@ -9,7 +9,6 @@ export const UserModule = {
     selectedScroll: null,
     scrollToFetch: null,
     fetching: false,
-    magicScrollPage: 0,
     dialog: "Welcome to Mona's shop",
   },
   mutations: {
@@ -43,8 +42,10 @@ export const UserModule = {
       commit('SET_USER', null);
       commit('SET_OWNER', false);
       commit('SET_SCROLL_LIST', null);
+      commit('SET_APPROVAL', false);
       commit('SET_SCROLL_SELECTED', null);
       commit('SET_SCROLL_TO_FETCH', null);
+      commit('SET_FETCHING', false);
       commit('SET_DIALOG', "Welcome to Mona's shop");
     },
     setUser({ commit }, user) {

@@ -70,7 +70,7 @@ export default {
       const magicScrolls = await response.json();
       // eslint-disable-next-line max-len
       const sortedById = magicScrolls.sort((a, b) => (parseInt(a.tokenId, 10) > parseInt(b.tokenId, 10) ? 1 : -1));
-      // console.log(sortedById);
+      console.log(sortedById);
 
       const next = sortedById.length > 0
         ? sortedById[sortedById.length - 1].tokenId
@@ -204,7 +204,7 @@ export default {
      */
     async function tokenSetup(data) {
       // console.log(data.tokenId);
-      const purchaseable = await isPurchaseable(
+      const purchasable = await isPurchaseable(
         data.tokenId,
         store.state.User.user,
       );
@@ -217,7 +217,7 @@ export default {
           name: data.name,
           courseId: data.courseId,
           description: data.description,
-          purchaseable,
+          purchasable,
           price: onChain[1],
           prerequisite: onChain[2],
           hasLesson: onChain[3],
@@ -273,8 +273,11 @@ export default {
           }
 
           // const userCertificates = [];
+          let scrollsData = await fetchAllMagicScrolls();
+          state.magicScrollsData = scrollsData;
 
           while (state.magicScrollsData.length > 0) {
+            console.log(store.state.User.scrollToFetch);
             const tokenAvailability = await Promise.all(
               state.magicScrollsData.map(tokenSetup),
             );
@@ -285,7 +288,7 @@ export default {
 
             store.dispatch('User/setMagicScrolls', toAdd);
             if (store.state.User.scrollToFetch) {
-              const scrollsData = await fetchAllMagicScrolls(
+              scrollsData = await fetchAllMagicScrolls(
                 store.state.User.scrollToFetch,
               );
               state.magicScrollsData = scrollsData;
@@ -352,8 +355,6 @@ export default {
         state.primary = 'CONNECT WALLET';
       }
       await verifyNetwork();
-      const scrollsData = await fetchAllMagicScrolls();
-      state.magicScrollsData = scrollsData;
 
       window.ethereum.on('accountsChanged', handleAccountsChanged);
       window.ethereum.on('chainChanged', handleChainChanged);

@@ -14,13 +14,17 @@
         <div class="half-circle-spinner circle circle-1"></div>
         <div class="half-circle-spinner circle circle-2"></div>
       </div>
-      <div class="image" :style="state.styles[imageIndex]" v-if="state.images[imageIndex - 1]">
-          <img
-            class="image display click"
-            :style="state.styles[imageIndex]"
-            :src="state.images[imageIndex - 1].url"
-            v-on:click="choosing(imageIndex - 1)"
-          />
+      <div
+        class="image"
+        :style="state.styles[imageIndex]"
+        v-if="state.images[imageIndex - 1]"
+      >
+        <img
+          class="image display click"
+          :style="state.styles[imageIndex]"
+          :src="state.images[imageIndex - 1].url"
+          v-on:click="choosing(imageIndex - 1)"
+        />
       </div>
     </div>
     <!-- <button
@@ -62,18 +66,38 @@
   <div class="selection item">
     <div class="background item-box">
       <div class="background current-item-frame" />
-
-      <div class="image selected" v-if="state.imageSelected">
-        <img class="image selected display" :src="state.imageSelected.url" />
+      <div v-if="state.imageSelected">
+        <div v-if="state.imageSelected.purchasable">
+          <div class="image selected">
+            <img
+              class="image selected display"
+              :src="state.imageSelected.url"
+            />
+          </div>
+          <div class="text">{{ state.imageSelected.name }}</div>
+          <div class="text own">Owned: 99999999</div>
+          <div class="text description">
+            {{ state.imageSelected.description }}
+          </div>
+          <button class="navButton buy" v-on:click="dummy()">Buy</button>
+          <div class="text price">{{ state.imageSelected.price }} DGT</div>
+        </div>
+        <div v-if="!state.imageSelected.purchasable">
+          <div class="image selected">
+            <img
+              class="image selected display"
+              :src="state.imageSelected.url"
+            />
+          </div>
+          <div class="text">{{ state.imageSelected.name }}</div>
+          <div class="text own">Owned: 99999999</div>
+          <div class="text description">
+            {{ state.imageSelected.description }}
+          </div>
+          <button class="navButton buy" v-on:click="dummy()">INACCESSIBLE</button>
+          <div class="text price">{{ state.imageSelected.price }} DGT</div>
+        </div>
       </div>
-      <div class="text">Introduction to Programming</div>
-      <div class="text own">Owned: 99999999</div>
-      <div class="text description">
-        This is a young cute cat. Bring it home so you can achieve eternal
-        happiness.
-      </div>
-      <button class="navButton buy" v-on:click="dummy()">Buy</button>
-      <div class="text price">30 DGT</div>
     </div>
   </div>
 </template>
@@ -88,110 +112,6 @@ export default defineComponent({
   name: 'ItemShelf',
   setup() {
     const store = useStore();
-    /**
-     * Returns the urls of the certificates of this user
-     *
-     * @param {certificate[]} proxy The certificates of this user
-     * @return {string[]} array of the urls.
-     */
-    function urlExtractor(proxy) {
-      const urlArr = [];
-      for (let index = 0; index < proxy.length; index += 1) {
-        if (proxy[index].length !== 0) urlArr.push(proxy[index][1].imageUrl);
-      }
-      return urlArr;
-    }
-    /**
-     * Returns the name of the certificates of this user
-     *
-     * @param {certificate[]} proxy The certificates of this user
-     * @return {string[]} array of the names.
-     */
-    function nameExtractor(proxy) {
-      const urlArr = [];
-      for (let index = 0; index < proxy.length; index += 1) {
-        if (proxy[index].length !== 0) urlArr.push(proxy[index][0]);
-      }
-      return urlArr;
-    }
-
-    /**
-     * Returns the address of the certificates of this user
-     *
-     * @param {certificate[]} proxy The certificates of this user
-     * @return {string[]} array of the addresses.
-     */
-    function addressExtractor(proxy) {
-      const urlArr = [];
-      for (let index = 0; index < proxy.length; index += 1) {
-        if (proxy[index].length !== 0) urlArr.push(proxy[index][2]);
-      }
-      return urlArr;
-    }
-
-    /**
-     * Returns the computed image urls to display
-     *
-     * @return {string[]} array of the image urls.
-     */
-    function computeImages() {
-      const page = [];
-      const certs = store.state.User.certificates
-        ? urlExtractor(store.state.User.certificates)
-        : store.state.User.certificates;
-      const startIdx = 0 + store.state.User.certificatePage * 8;
-      if (certs) {
-        const amount = startIdx + 8 < certs.length ? startIdx + 8 : certs.length;
-        for (let index = startIdx; index < amount; index += 1) {
-          const element = certs[index];
-          page.push(element);
-        }
-      }
-      return page;
-    }
-
-    /**
-     * Returns the computed image names to display
-     *
-     * @return {string[]} array of the image names.
-     */
-    function computeNames() {
-      const page = [];
-      const certs = store.state.User.certificates
-        ? nameExtractor(store.state.User.certificates)
-        : store.state.User.certificates;
-      const startIdx = 0 + store.state.User.certificatePage * 8;
-      if (certs) {
-        const amount = startIdx + 8 < certs.length ? startIdx + 8 : certs.length;
-        for (let index = startIdx; index < amount; index += 1) {
-          const element = certs[index];
-          page.push(element);
-        }
-      }
-      return page;
-    }
-
-    /**
-     * Returns the computed image addresses to display
-     *
-     * @return {string[]} array of the image addresses.
-     */
-    function computeAddresses() {
-      const page = [];
-      const certs = store.state.User.certificates
-        ? addressExtractor(store.state.User.certificates)
-        : store.state.User.certificates;
-      const startIdx = 0 + store.state.User.certificatePage * 8;
-      if (certs) {
-        const amount = startIdx + 8 < certs.length ? startIdx + 8 : certs.length;
-        for (let index = startIdx; index < amount; index += 1) {
-          const element = certs[index];
-          page.push(element);
-        }
-      }
-      return page;
-    }
-    // images: computed(() => store.state.User.scrollList),
 
     const state = reactive({
       showBoth: true,
@@ -200,7 +120,7 @@ export default defineComponent({
       scrollSelected: computed(() => (store.state.User.selectedScroll
         ? store.state.User.selectedScroll : null)),
       loading: computed(() => store.state.User.fetching),
-      pageIdx: computed(() => store.state.User.magicScrollPage),
+      pageIdx: 0,
       images: computed(() => (store.state.User.scrollList ? store.state.User.scrollList : [])),
       styles: [
         {},
