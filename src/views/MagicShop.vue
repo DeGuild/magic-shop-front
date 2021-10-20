@@ -2,7 +2,13 @@
   <background />
   <connect-wallet />
   <div v-if="user !== null">
-    <item-shelf/>
+    <div v-if="wallet === true">
+      <item-shelf />
+    </div>
+    <div v-if="wallet !== true">
+      <approve-modal></approve-modal>
+      <approve-wallet></approve-wallet>
+    </div>
   </div>
   <no-wallet v-if="user === null" />
 </template>
@@ -11,8 +17,10 @@
 import { useStore } from 'vuex';
 import { computed } from 'vue';
 import ConnectWallet from '../components/Buttons/ConnectWallet.vue';
+import ApproveWallet from '../components/Buttons/ApproveWallet.vue';
 import Background from '../components/General/Background.vue';
 import NoWallet from '../components/General/NoWallet.vue';
+import ApproveModal from '../components/General/Approve.vue';
 import ItemShelf from '../components/Display/ItemShelf.vue';
 // @ is an alias to /src
 
@@ -23,13 +31,16 @@ export default {
     Background,
     NoWallet,
     ItemShelf,
+    ApproveModal,
+    ApproveWallet,
   },
   setup() {
     const store = useStore();
     const user = computed(() => store.state.User.user);
-    console.log(store.state.User.user);
-    console.log(user);
-    return { user };
+    const wallet = computed(() => store.state.User.approval);
+    // console.log(store.state.User.user);
+    // console.log(user);
+    return { user, wallet };
   },
 };
 </script>
