@@ -79,7 +79,7 @@
           <div class="text description">
             {{ state.imageSelected.description }}
           </div>
-          <button class="navButton buy" v-on:click="dummy()">Buy</button>
+          <button class="navButton buy" v-on:click="buy()" v-html="state.primary"></button>
           <div class="text price">{{ state.imageSelected.price }} DGT</div>
         </div>
         <div v-if="!state.imageSelected.purchasable">
@@ -129,6 +129,7 @@ export default defineComponent({
     const web3 = new Web3(Web3.givenProvider || 'ws://localhost:8545');
 
     const state = reactive({
+      primary: 'BUY',
       showBoth: true,
       showExam: false,
       showAll: false,
@@ -233,18 +234,6 @@ export default defineComponent({
      * @param {address} address The address of any contract using the interface given
      * @return {string} name of the contract.
      */
-    async function isShopOwnPrerequisite(address) {
-      const certificateManager = new web3.eth.Contract(skillCertificateABI, address);
-      const caller = await certificateManager.methods.shop().call();
-      return caller === shopAddress;
-    }
-
-    /**
-     * Returns name of the address.
-     *
-     * @param {address} address The address of any contract using the interface given
-     * @return {string} name of the contract.
-     */
     async function getTokenType(address) {
       const certificateManager = new web3.eth.Contract(skillCertificateABI, address);
       const caller = await certificateManager.methods.typeAccepted().call();
@@ -271,6 +260,18 @@ export default defineComponent({
         // console.error('Not purchasable');
         return {};
       }
+    }
+
+    /**
+     * Returns name of the address.
+     *
+     * @param {address} address The address of any contract using the interface given
+     * @return {string} name of the contract.
+     */
+    async function isShopOwnPrerequisite(address) {
+      const certificateManager = new web3.eth.Contract(skillCertificateABI, address);
+      const caller = await certificateManager.methods.shop().call();
+      return caller === shopAddress;
     }
 
     /**
@@ -304,12 +305,39 @@ export default defineComponent({
       const { prerequisite } = state.imageSelected;
       const confirm = await isShopOwnPrerequisite(prerequisite);
       const type = await getTokenType(prerequisite);
-      console.log(confirm, type);
+      // console.log(confirm, type, prerequisite);
       if (confirm) {
         await choosing(type);
-        store.dispatch('User/setDialog', `Please buy this one, ${state.images[type].name}.`);
+        store.dispatch('User/setDialog', `Please earn the certificate of this scroll, ${state.images[type].name}.`);
       } else {
-        store.dispatch('User/setDialog', 'This scroll require a certificate that does not belong to this shop');
+        store.dispatch('User/setDialog', `You are not verified by ${prerequisite}`);
+      }
+    }
+
+    /**
+     * Returns whether user is the owner of this shop
+     *
+     * @param {address} address ethereum address
+     * @return {bool} ownership.
+     */
+    async function buy() {
+      state.primary = "<i class='fas fa-spinner fa-spin'></i>";
+      store.dispatch('User/setDialog', 'We are processing your transaction! It will take a while.');
+
+      const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
+      const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
+      const { tokenId } = state.imageSelected;
+      try {
+        const caller = await magicShop.methods
+          .buyScroll(tokenId)
+          .send({ from: realAddress });
+        state.primary = 'Buy';
+        await choosing(tokenId);
+        store.dispatch('User/setDialog', 'Transaction completed! Thank you for doing business with us~');
+
+        return caller;
+      } catch (error) {
+        return false;
       }
     }
 
@@ -317,16 +345,22 @@ export default defineComponent({
       state.showAll = true;
       state.showExam = false;
       state.showBoth = false;
+      state.images = computed(() => (store.state.User.scrollList ? store.state.User.scrollList : []));
+      store.dispatch('User/setDialog', 'All scrolls are shown.');
     }
     function showBoth() {
       state.showBoth = true;
       state.showExam = false;
       state.showAll = false;
+      state.images = computed(() => (store.state.User.scrollList ? store.state.User.scrollList.filter((obj) => obj.hasLesson) : []));
+      store.dispatch('User/setDialog', 'These scrolls will teach you skills and let you earn certificate.');
     }
     function showExam() {
       state.showExam = true;
       state.showBoth = false;
       state.showAll = false;
+      state.images = computed(() => (store.state.User.scrollList ? store.state.User.scrollList.filter((obj) => !obj.hasLesson) : []));
+      store.dispatch('User/setDialog', 'These scrolls let you earn certificate, but you do not get to learn the lessons');
     }
 
     return {
@@ -337,6 +371,7 @@ export default defineComponent({
       showBoth,
       showExam,
       moreInfo,
+      buy,
     };
   },
 });
@@ -582,9 +617,9 @@ export default defineComponent({
   // background-color: red;
 
   &.price {
-    left: 22vw;
+    left: 2vw;
     top: 33.5vw;
-    width: 10vw;
+    width: 30vw;
     height: 2vw;
     font-size: 1vw;
     display: unset;

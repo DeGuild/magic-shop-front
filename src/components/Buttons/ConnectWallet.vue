@@ -215,7 +215,7 @@ export default {
           courseId: data.courseId,
           description: data.description,
           purchasable,
-          price: onChain[1],
+          price: web3.utils.fromWei(onChain[1], 'ether'),
           prerequisite: onChain[2],
           hasLesson: onChain[3],
           hasPrerequisite: onChain[4],
