@@ -22,10 +22,7 @@ const Web3 = require('web3');
  */
 // eslint-disable-next-line no-unused-vars
 const shopAddress = '0x1B362371f11cAA26B1A993f7Ffd711c0B9966f70';
-// const {
-//   skillCertificateABI,
-// } = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/
-// SkillCertificates/ISkillCertificate.sol/ISkillCertificate.json');
+
 const dgcAddress = '0x4312D992940D0b110525f553160c9984b77D1EF4';
 const dgcABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/Tokens/DeGuildCoinERC20.sol/DeGuildCoinERC20.json').abi;
 const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/IMagicScrolls.sol/IMagicScrolls.json').abi;
@@ -70,7 +67,7 @@ export default {
       const magicScrolls = await response.json();
       // eslint-disable-next-line max-len
       const sortedById = magicScrolls.sort((a, b) => (parseInt(a.tokenId, 10) > parseInt(b.tokenId, 10) ? 1 : -1));
-      console.log(sortedById);
+      // console.log(sortedById);
 
       const next = sortedById.length > 0
         ? sortedById[sortedById.length - 1].tokenId
@@ -298,7 +295,7 @@ export default {
           }
 
           store.dispatch('User/setFetching', false);
-          console.log(store.state.User.scrollList);
+          // console.log(store.state.User.scrollList);
           store.dispatch(
             'User/setDialog',
             'Great! So, what would you like to buy?',

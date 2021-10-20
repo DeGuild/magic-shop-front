@@ -27,13 +27,13 @@
         />
       </div>
     </div>
-    <!-- <button
+    <button
       class="navButton previous"
       v-on:click="dummy()"
       v-if="state.pageIdx > 0"
     >
       &#60;
-    </button> -->
+    </button>
     <button
       class="navButton exam"
       :class="{ disabled: !state.showExam }"
@@ -55,13 +55,13 @@
     >
       All
     </button>
-    <!-- <button
+    <button
       class="navButton"
       v-on:click="dummy()"
       v-if="state.pageIdx < state.images.length / 8 - 1"
     >
       &#62;
-    </button> -->
+    </button>
   </div>
   <div class="selection item">
     <div class="background item-box">
@@ -75,7 +75,7 @@
             />
           </div>
           <div class="text">{{ state.imageSelected.name }}</div>
-          <div class="text own">Owned: 99999999</div>
+          <div class="text own">Owned: {{ state.own }}</div>
           <div class="text description">
             {{ state.imageSelected.description }}
           </div>
@@ -90,11 +90,16 @@
             />
           </div>
           <div class="text">{{ state.imageSelected.name }}</div>
-          <div class="text own">Owned: 99999999</div>
+          <div class="text own">Owned: {{ state.own }}</div>
           <div class="text description">
             {{ state.imageSelected.description }}
           </div>
-          <button class="navButton buy" v-on:click="dummy()">INACCESSIBLE</button>
+          <div class="navButton inaccessible">
+            INACCESSIBLE
+          </div>
+          <button class="navButton info" v-on:click="moreInfo()">
+            MORE INFO
+          </button>
           <div class="text price">{{ state.imageSelected.price }} DGT</div>
         </div>
       </div>
@@ -104,14 +109,24 @@
 
 <script>
 /* eslint-disable no-unused-vars */
+/* eslint-disable max-len */
 
 import { defineComponent, reactive, computed } from 'vue';
 import { useStore } from 'vuex';
+
+const Web3 = require('web3');
+
+const shopAddress = '0x1B362371f11cAA26B1A993f7Ffd711c0B9966f70';
+// const dgcAddress = '0x4312D992940D0b110525f553160c9984b77D1EF4';
+// const dgcABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/Tokens/DeGuildCoinERC20.sol/DeGuildCoinERC20.json').abi;
+const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/IMagicScrolls.sol/IMagicScrolls.json').abi;
+const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/ISkillCertificate.sol/ISkillCertificate.json').abi;
 
 export default defineComponent({
   name: 'ItemShelf',
   setup() {
     const store = useStore();
+    const web3 = new Web3(Web3.givenProvider || 'ws://localhost:8545');
 
     const state = reactive({
       showBoth: true,
@@ -122,6 +137,7 @@ export default defineComponent({
       loading: computed(() => store.state.User.fetching),
       pageIdx: 0,
       images: computed(() => (store.state.User.scrollList ? store.state.User.scrollList : [])),
+      own: 0,
       styles: [
         {},
         {
@@ -193,13 +209,110 @@ export default defineComponent({
         },
       ],
     });
+
     function dummy() {
       console.log('Calling the dummy function');
       console.log(store.state.User.scrollList);
     }
-    function choosing(imageIdx) {
-      state.imageSelected = state.images[imageIdx];
+
+    /**
+     * Returns name of the address.
+     *
+     * @param {address} address The address of any contract using the interface given
+     * @return {string} name of the contract.
+     */
+    async function getName(address) {
+      const certificateManager = new web3.eth.Contract(skillCertificateABI, address);
+      const caller = await certificateManager.methods.name().call();
+      return caller;
     }
+
+    /**
+     * Returns name of the address.
+     *
+     * @param {address} address The address of any contract using the interface given
+     * @return {string} name of the contract.
+     */
+    async function isShopOwnPrerequisite(address) {
+      const certificateManager = new web3.eth.Contract(skillCertificateABI, address);
+      const caller = await certificateManager.methods.shop().call();
+      return caller === shopAddress;
+    }
+
+    /**
+     * Returns name of the address.
+     *
+     * @param {address} address The address of any contract using the interface given
+     * @return {string} name of the contract.
+     */
+    async function getTokenType(address) {
+      const certificateManager = new web3.eth.Contract(skillCertificateABI, address);
+      const caller = await certificateManager.methods.typeAccepted().call();
+      return caller;
+    }
+
+    /**
+     * Returns whether user is the owner of this shop
+     *
+     * @param {address} address ethereum address
+     * @return {bool} ownership.
+     */
+    async function getBalanceOf(imageSelected) {
+      const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
+      const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
+
+      try {
+        const caller = await magicShop.methods
+          .balanceOfOne(realAddress, imageSelected.tokenId)
+          .call();
+        // console.log(caller);
+        return caller;
+      } catch (error) {
+        // console.error('Not purchasable');
+        return {};
+      }
+    }
+
+    /**
+     * Returns whether user is the owner of this shop
+     *
+     * @param {address} address ethereum address
+     * @return {bool} ownership.
+     */
+    async function choosing(imageIdx) {
+      state.imageSelected = state.images[imageIdx];
+      // console.log(state.imageSelected);
+      store.dispatch('User/setDialog', 'Counting your owned scrolls for this one...');
+      state.own = '...';
+      state.own = await getBalanceOf(state.imageSelected);
+
+      if (state.imageSelected.purchasable) {
+        store.dispatch('User/setDialog', 'Would you like to buy more?');
+      } else {
+        const prerequisite = await getName(state.imageSelected.prerequisite);
+        store.dispatch('User/setDialog', `You need to earn ${prerequisite} certificate first!`);
+      }
+    }
+
+    /**
+     * Returns whether user is the owner of this shop
+     *
+     * @param {address} address ethereum address
+     * @return {bool} ownership.
+     */
+    async function moreInfo() {
+      const { prerequisite } = state.imageSelected;
+      const confirm = await isShopOwnPrerequisite(prerequisite);
+      const type = await getTokenType(prerequisite);
+      console.log(confirm, type);
+      if (confirm) {
+        await choosing(type);
+        store.dispatch('User/setDialog', `Please buy this one, ${state.images[type].name}.`);
+      } else {
+        store.dispatch('User/setDialog', 'This scroll require a certificate that does not belong to this shop');
+      }
+    }
+
     function showAll() {
       state.showAll = true;
       state.showExam = false;
@@ -215,6 +328,7 @@ export default defineComponent({
       state.showBoth = false;
       state.showAll = false;
     }
+
     return {
       state,
       dummy,
@@ -222,6 +336,7 @@ export default defineComponent({
       showAll,
       showBoth,
       showExam,
+      moreInfo,
     };
   },
 });
@@ -407,6 +522,37 @@ export default defineComponent({
         ),
         #a7a7a7;
     }
+  }
+
+  &.inaccessible{
+    width: 11.615vw;
+    top: 30vw;
+    left: 20.4vw;
+
+    background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.25) 0%,
+        rgba(255, 255, 255, 0) 100%
+      ),
+      #ff0202;
+    background-blend-mode: soft-light, normal;
+    cursor: default;
+    border-radius: 2vw;
+  }
+
+  &.info{
+    width: 11.615vw;
+    top: 30vw;
+    left: 3.5vw;
+
+    background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.25) 0%,
+        rgba(255, 255, 255, 0) 100%
+      ),
+      #2F103E;
+    background-blend-mode: soft-light, normal;
+    border-radius: 2vw;
   }
 }
 
