@@ -49,6 +49,9 @@ export const UserModule = {
     setUser({ commit }, user) {
       commit('SET_USER', user);
     },
+    setDialog({ commit }, text) {
+      commit('SET_DIALOG', text);
+    },
     setApproval({ commit }, status) {
       commit('SET_APPROVAL', status);
     },

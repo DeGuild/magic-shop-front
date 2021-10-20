@@ -21,7 +21,7 @@ const Web3 = require('web3');
 const shopAddress = '0x1B362371f11cAA26B1A993f7Ffd711c0B9966f70';
 const dgcAddress = '0x4312D992940D0b110525f553160c9984b77D1EF4';
 const dgcABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/Tokens/DeGuildCoinERC20.sol/DeGuildCoinERC20.json').abi;
-// DeGuild-MG-CS-Token-contracts/artifacts/@openzeppelin/contracts/access/Ownable.sol/Ownable.json
+
 export default {
   name: 'ApproveWallet',
   setup() {
@@ -51,7 +51,7 @@ export default {
         const caller = await deguildCoin.methods
           .allowance(realAddress, shopAddress)
           .call();
-        return caller === balance;
+        return caller <= balance && caller > 0;
       } catch (error) {
         return false;
       }
@@ -64,6 +64,8 @@ export default {
      * @return {bool} ownership.
      */
     async function approve() {
+      state.primary = "<i class='fas fa-spinner fa-spin'></i>";
+
       const deguildCoin = new web3.eth.Contract(dgcABI, dgcAddress);
       const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
       try {

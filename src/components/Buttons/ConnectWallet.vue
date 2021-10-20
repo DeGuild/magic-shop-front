@@ -157,7 +157,7 @@ export default {
         const caller = await deguildCoin.methods
           .allowance(realAddress, shopAddress)
           .call();
-        return caller === balance;
+        return caller <= balance && caller > 0;
       } catch (error) {
         return false;
       }
@@ -255,12 +255,23 @@ export default {
             web3.utils.toChecksumAddress(accounts.result[0]),
           );
           store.dispatch('User/setOwner', ownership);
+          store.dispatch(
+            'User/setDialog',
+            'Please wait and I will show you what we have got!',
+          );
           store.dispatch('User/setFetching', true);
 
           let toAdd = [];
           const approve = await hasApproval(store.state.User.user);
-          console.log(approve);
+          // console.log(approve);
           store.dispatch('User/setApproval', approve);
+          if (!approve) {
+            store.dispatch(
+              'User/setDialog',
+              'Seems like you have not approved your walllet.',
+            );
+          }
+
           // const userCertificates = [];
 
           while (state.magicScrollsData.length > 0) {
@@ -285,6 +296,10 @@ export default {
 
           store.dispatch('User/setFetching', false);
           // console.log(store.state.User.scrollList);
+          store.dispatch(
+            'User/setDialog',
+            'Great! So, what would you like to buy?',
+          );
 
           return true;
         } catch (error) {
