@@ -26,6 +26,8 @@ const shopAddress = '0x1B362371f11cAA26B1A993f7Ffd711c0B9966f70';
 //   skillCertificateABI,
 // } = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/
 // SkillCertificates/ISkillCertificate.sol/ISkillCertificate.json');
+const dgcAddress = '0x4312D992940D0b110525f553160c9984b77D1EF4';
+const dgcABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/Tokens/DeGuildCoinERC20.sol/DeGuildCoinERC20.json').abi;
 const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/IMagicScrolls.sol/IMagicScrolls.json').abi;
 const ownerABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/@openzeppelin/contracts/access/Ownable.sol/Ownable.json').abi;
 // DeGuild-MG-CS-Token-contracts/artifacts/@openzeppelin/contracts/access/Ownable.sol/Ownable.json
@@ -142,6 +144,25 @@ export default {
     }
 
     /**
+     * Returns whether user has approved this shop to spend their DGC
+     *
+     * @param {address} address ethereum address
+     * @return {bool} approval.
+     */
+    async function hasApproval(address) {
+      const deguildCoin = new web3.eth.Contract(dgcABI, dgcAddress);
+      const realAddress = web3.utils.toChecksumAddress(address);
+      try {
+        const balance = await deguildCoin.methods.balanceOf(realAddress).call();
+        const caller = await deguildCoin.methods
+          .allowance(realAddress, shopAddress)
+          .call();
+        return caller === balance;
+      } catch (error) {
+        return false;
+      }
+    }
+    /**
      * Returns verification of the Rinkeby Network
      *
      * @param {address} address The address of any contract using the interface given
@@ -237,6 +258,9 @@ export default {
           store.dispatch('User/setFetching', true);
 
           let toAdd = [];
+          const approve = await hasApproval(store.state.User.user);
+          console.log(approve);
+          store.dispatch('User/setApproval', approve);
           // const userCertificates = [];
 
           while (state.magicScrollsData.length > 0) {

@@ -5,6 +5,7 @@ export const UserModule = {
     user: null,
     owner: false,
     scrollList: null,
+    approval: false,
     selectedScroll: null,
     scrollToFetch: null,
     fetching: false,
@@ -13,6 +14,9 @@ export const UserModule = {
   mutations: {
     SET_USER(state, user) {
       state.user = user;
+    },
+    SET_APPROVAL(state, status) {
+      state.approval = status;
     },
     SET_OWNER(state, bool) {
       state.owner = bool;
@@ -44,6 +48,9 @@ export const UserModule = {
     },
     setUser({ commit }, user) {
       commit('SET_USER', user);
+    },
+    setApproval({ commit }, status) {
+      commit('SET_APPROVAL', status);
     },
     setOwner({ commit }, bool) {
       commit('SET_OWNER', bool);
