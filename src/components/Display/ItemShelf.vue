@@ -123,7 +123,7 @@
    <div class="selection item" v-if="state.addScroll">
     <div class="background item-box">
       <div class="background current-item-frame" />
-        <input class="text place-holder" placeholder="Upload A Picture">
+        <input class="text course url" v-model="state.addURL" placeholder="Picture URL">
         <input class="text course name" v-model="state.addName" placeholder="Course Name">
         <input class="text course id" v-model="state.addID" placeholder="Course ID">
         <input class="text course set-price" v-model="state.addPrice" placeholder="Price">
@@ -168,6 +168,7 @@ export default defineComponent({
       showExam: false,
       showAll: false,
       nextPage: false,
+      addURL: null,
       addName: null,
       addID: null,
       addPrice: null,
@@ -407,6 +408,7 @@ export default defineComponent({
       state.imageSelected = null;
     }
     function cancelAdd() {
+      state.addURL = null;
       state.addName = null;
       state.addID = null;
       state.addPrice = null;
@@ -728,19 +730,18 @@ export default defineComponent({
     font-size: 1.1vw;
   }
 
-  &.place-holder {
-    text-align: center;
-    left: 12.5vw;
-    top: 6vw;
-    height: 4vw;
-    color: rgba(26, 26, 26, 0.6);
-  }
-
   &.course {
     height: 4vw;
     width: 28vw;
     left: 4vw;
     color: rgba(26, 26, 26, 0.6);
+
+    &.url {
+    text-align: center;
+    left: 12.5vw;
+    top: 6vw;
+    width: 19.5vw;
+    }
 
     &.name {
       top: 15vw;
