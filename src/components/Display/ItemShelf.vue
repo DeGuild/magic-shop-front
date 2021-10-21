@@ -1,32 +1,45 @@
 <template>
   <div class="selection">
     <div class="background"></div>
-    <div v-for="imageIndex in 8" :key="imageIndex">
-      <div
-        class="background frame"
-        :style="state.stylesFrame[imageIndex]"
-      ></div>
-      <div
-        class="half-circle-spinner"
-        :style="state.styles[imageIndex]"
-        v-if="state.loading"
-      >
-        <div class="half-circle-spinner circle circle-1"></div>
-        <div class="half-circle-spinner circle circle-2"></div>
-      </div>
-      <div
-        class="image"
-        :style="state.styles[imageIndex]"
-        v-if="state.images[imageIndex - 1]"
-      >
-        <img
-          class="image display click"
+      <div v-for="imageIndex in 8" :key="imageIndex">
+        <div
+          class="background frame"
+          :style="state.stylesFrame[imageIndex]"
+        ></div>
+        <div
+          class="half-circle-spinner"
           :style="state.styles[imageIndex]"
-          :src="state.images[imageIndex - 1].url"
-          v-on:click="choosing(imageIndex - 1)"
-        />
-      </div>
+          v-if="state.loading"
+        >
+          <div class="half-circle-spinner circle circle-1"></div>
+          <div class="half-circle-spinner circle circle-2"></div>
+        </div>
+        <div
+          class="image"
+          :style="state.styles[imageIndex]"
+          v-if="state.images[imageIndex - 1]"
+        >
+          <img
+            class="image display click"
+            :style="state.styles[imageIndex]"
+            :src="state.images[imageIndex - 1].url"
+            v-on:click="choosing(imageIndex - 1)"
+          />
+        </div>
     </div>
+    <button
+      class="navButton addScroll"
+      v-on:click="addScroll"
+      >
+      Add Scroll
+    </button>
+    <button
+      class="navButton addScroll cancel"
+      v-if="state.addScroll"
+      v-on:click="cancelAdd"
+      >
+      Cancel
+    </button>
     <button
       class="navButton previous"
       v-on:click="dummy()"
@@ -62,7 +75,9 @@
     >
       &#62;
     </button>
+    <div class="background overlay" v-if="state.addScroll"></div>
   </div>
+
   <div class="selection item">
     <div class="background item-box">
       <div class="background current-item-frame" />
@@ -105,6 +120,24 @@
       </div>
     </div>
   </div>
+   <div class="selection item" v-if="state.addScroll">
+    <div class="background item-box">
+      <div class="background current-item-frame" />
+        <input class="text place-holder" placeholder="Upload A Picture">
+        <input class="text course name" v-model="state.addName" placeholder="Course Name">
+        <input class="text course id" v-model="state.addID" placeholder="Course ID">
+        <input class="text course set-price" v-model="state.addPrice" placeholder="Price">
+        <button class="navButton buy" v-on:click="goNext">NEXT</button>
+    </div>
+  </div>
+  <div class="selection item" v-if="state.nextPage">
+    <div class="background item-box">
+      <input class="text course prereq" v-model="state.addPrereq" placeholder="Course Prerequisite">
+      <input class="text course desc" v-model="state.addDesc" placeholder="Course Description">
+      <button class="navButton back" v-on:click="goBack">BACK</button>
+      <button class="navButton buy">ADD</button>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -130,9 +163,16 @@ export default defineComponent({
 
     const state = reactive({
       primary: 'BUY',
+      addScroll: false,
       showBoth: true,
       showExam: false,
       showAll: false,
+      nextPage: false,
+      addName: null,
+      addID: null,
+      addPrice: null,
+      addPrereq: null,
+      addDesc: null,
       scrollSelected: computed(() => (store.state.User.selectedScroll
         ? store.state.User.selectedScroll : null)),
       loading: computed(() => store.state.User.fetching),
@@ -362,6 +402,25 @@ export default defineComponent({
       state.images = computed(() => (store.state.User.scrollList ? store.state.User.scrollList.filter((obj) => !obj.hasLesson) : []));
       store.dispatch('User/setDialog', 'These scrolls let you earn certificate, but you do not get to learn the lessons');
     }
+    function addScroll() {
+      state.addScroll = true;
+      state.imageSelected = null;
+    }
+    function cancelAdd() {
+      state.addName = null;
+      state.addID = null;
+      state.addPrice = null;
+      state.addPrereq = null;
+      state.addDesc = null;
+      state.addScroll = false;
+      state.nextPage = false;
+    }
+    function goNext() {
+      state.nextPage = true;
+    }
+    function goBack() {
+      state.nextPage = false;
+    }
 
     return {
       state,
@@ -372,6 +431,10 @@ export default defineComponent({
       showExam,
       moreInfo,
       buy,
+      addScroll,
+      cancelAdd,
+      goNext,
+      goBack,
     };
   },
 });
@@ -444,6 +507,10 @@ export default defineComponent({
     background: url('../../assets/currentItemFrame.png');
     background-size: cover;
   }
+  &.overlay {
+    height: 30vw;
+    background: rgba(0, 0, 0, 0.5);
+  }
 }
 .navButton {
   display: flex;
@@ -480,6 +547,18 @@ export default defineComponent({
 
   text-shadow: 0px 2px 4px rgba(91, 26, 26, 0.14),
     0px 3px 4px rgba(123, 12, 12, 0.12), 0px 1px 5px rgba(136, 13, 13, 0.2);
+
+  &.addScroll {
+    width: 15.938vw;
+    top: 18.125vw;
+    left: 80vw;
+    background: #9002FF;
+
+    &.cancel {
+      left: 45.625vw;
+      background: #C39B44;
+    }
+  }
 
   &.previous {
     left: 47.292vw;
@@ -589,6 +668,13 @@ export default defineComponent({
     background-blend-mode: soft-light, normal;
     border-radius: 2vw;
   }
+
+  &.back{
+    width: 11.615vw;
+    top: 30vw;
+    left: 4vw;
+    background: #1B83E2;
+  }
 }
 
 .text {
@@ -640,6 +726,45 @@ export default defineComponent({
     left: 2.3vw;
     top: 14vw;
     font-size: 1.1vw;
+  }
+
+  &.place-holder {
+    text-align: center;
+    left: 12.5vw;
+    top: 6vw;
+    height: 4vw;
+    color: rgba(26, 26, 26, 0.6);
+  }
+
+  &.course {
+    height: 4vw;
+    width: 28vw;
+    left: 4vw;
+    color: rgba(26, 26, 26, 0.6);
+
+    &.name {
+      top: 15vw;
+    }
+
+    &.id {
+      top: 22vw;
+    }
+
+    &.set-price {
+      height: 3vw;
+      width: 5vw;
+      top: 30vw;
+    }
+
+    &.prereq {
+      top: 6vw;
+      height: 6vw;
+    }
+
+    &.desc {
+      top: 15vw;
+      height: 12vw;
+    }
   }
 }
 .half-circle-spinner {
