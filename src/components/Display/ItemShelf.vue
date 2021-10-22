@@ -17,61 +17,61 @@
       <div
         class="image"
         :style="state.styles[imageIndex]"
-        v-if="state.images[imageIndex - 1]"
+        v-if="state.images[imageIndex + state.pageIdx*8 - 1]"
       >
         <img
           class="image display click"
           :style="state.styles[imageIndex]"
-          :src="state.images[imageIndex - 1].url"
-          v-on:click="choosing(imageIndex - 1)"
+          :src="state.images[imageIndex + state.pageIdx*8 - 1].url"
+          v-on:click="choosing(imageIndex + state.pageIdx*8 - 1)"
         />
       </div>
     </div>
     <button
-      class="navButton addScroll"
-      v-on:click="addScroll"
+      class="Button addScroll"
+      v-on:click="addScrollToggle"
       v-if="owner && !state.addScroll"
     >
       Add Scroll
     </button>
     <button
-      class="navButton addScroll cancel"
+      class="Button addScroll cancel"
       v-if="state.addScroll"
       v-on:click="cancelAdd"
     >
       Cancel
     </button>
     <button
-      class="navButton previous"
-      v-on:click="dummy()"
+      class="Button previous"
+      v-on:click="showPrevious()"
       v-if="state.pageIdx > 0"
     >
       &#60;
     </button>
     <button
-      class="navButton exam"
+      class="Button exam"
       :class="{ disabled: !state.showExam }"
       v-on:click="showExam"
     >
       Exam Only
     </button>
     <button
-      class="navButton both"
+      class="Button both"
       :class="{ disabled: !state.showBoth }"
       v-on:click="showBoth"
     >
       Both
     </button>
     <button
-      class="navButton all"
+      class="Button all"
       :class="{ disabled: !state.showAll }"
       v-on:click="showAll"
     >
       All
     </button>
     <button
-      class="navButton"
-      v-on:click="dummy()"
+      class="Button"
+      v-on:click="showNext()"
       v-if="state.pageIdx < state.images.length / 8 - 1"
     >
       &#62;
@@ -96,7 +96,7 @@
             {{ state.imageSelected.description }}
           </div>
           <button
-            class="navButton buy"
+            class="Button buy"
             v-on:click="buy()"
             v-html="state.primary"
           ></button>
@@ -114,10 +114,8 @@
           <div class="text description">
             {{ state.imageSelected.description }}
           </div>
-          <div class="navButton inaccessible">INACCESSIBLE</div>
-          <button class="navButton info" v-on:click="moreInfo()">
-            MORE INFO
-          </button>
+          <div class="Button inaccessible">INACCESSIBLE</div>
+          <button class="Button info" v-on:click="moreInfo()">MORE INFO</button>
           <div class="text price">{{ state.imageSelected.price }} DGT</div>
         </div>
       </div>
@@ -149,7 +147,22 @@
         v-model="state.addPrice"
         placeholder="Price"
       />
-      <button class="navButton buy" v-on:click="goNext">NEXT</button>
+      <button
+        class="Button exam add"
+        :class="{ disabled: state.addHasLesson }"
+        v-on:click="selectExam()"
+      >
+        Exam Only
+      </button>
+      <button
+        class="Button both add"
+        :class="{ disabled: !state.addHasLesson }"
+        v-on:click="selectBoth()"
+      >
+        Both
+      </button>
+
+      <button class="Button buy" v-on:click="goNext">NEXT</button>
     </div>
   </div>
   <div class="selection item" v-if="state.nextPage">
@@ -158,14 +171,26 @@
         class="text course prereq"
         v-model="state.addPrereq"
         placeholder="Course Prerequisite"
+        v-show="state.addHasPrereq"
       />
       <textarea
         class="text course desc"
         v-model="state.addDesc"
+        :class="{ 'no-prerequisite': !state.addHasPrereq }"
         placeholder="Course Description"
       ></textarea>
-      <button class="navButton back" v-on:click="goBack">BACK</button>
-      <button class="navButton buy">ADD</button>
+      <button
+        class="Button hasPrereq"
+        v-on:click="selectHasPrereq()"
+        v-html="state.primary3"
+        :class="{ disabled: !state.addHasPrereq }"
+      ></button>
+      <button class="Button back" v-on:click="goBack">BACK</button>
+      <button
+        class="Button buy"
+        v-html="state.primary2"
+        v-on:click="addScroll"
+      ></button>
     </div>
   </div>
 </template>
@@ -195,8 +220,10 @@ export default defineComponent({
 
     const state = reactive({
       primary: 'BUY',
+      primary2: 'ADD',
+      primary3: 'Require prerequisite',
       addScroll: false,
-      showBoth: true,
+      showBoth: false,
       showExam: false,
       showAll: false,
       nextPage: false,
@@ -204,8 +231,10 @@ export default defineComponent({
       addName: null,
       addID: null,
       addPrice: null,
+      addHasPrereq: false,
       addPrereq: null,
       addDesc: null,
+      addHasLesson: false,
       scrollSelected: computed(() => (store.state.User.selectedScroll ? store.state.User.selectedScroll : null)),
       loading: computed(() => store.state.User.fetching),
       pageIdx: 0,
@@ -284,18 +313,19 @@ export default defineComponent({
     });
 
     function validURL(str) {
-      const pattern = new RegExp('^(https?:\\/\\/)?' // protocol
-    + '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' // domain name
-    + '((\\d{1,3}\\.){3}\\d{1,3}))' // OR ip (v4) address
-    + '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' // port and path
-    + '(\\?[;&a-z\\d%_.~+=-]*)?' // query string
-    + '(\\#[-a-z\\d_]*)?$', 'i'); // fragment locator
+      const pattern = new RegExp(
+        '^(https?:\\/\\/)?' // protocol
+          + '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' // domain name
+          + '((\\d{1,3}\\.){3}\\d{1,3}))' // OR ip (v4) address
+          + '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' // port and path
+          + '(\\?[;&a-z\\d%_.~+=-]*)?' // query string
+          + '(\\#[-a-z\\d_]*)?$',
+        'i',
+      ); // fragment locator
       return !!pattern.test(str);
     }
 
-    const previewUrl = computed(() => (validURL(state.addURL)
-      ? state.addURL
-      : noUrl));
+    const previewUrl = computed(() => (validURL(state.addURL) ? state.addURL : noUrl));
 
     function dummy() {
       console.log('Calling the dummy function');
@@ -454,10 +484,120 @@ export default defineComponent({
       }
     }
 
+    function addScrollToggle() {
+      state.addScroll = true;
+      state.imageSelected = null;
+    }
+    function selectExam() {
+      state.addHasLesson = false;
+    }
+    function selectBoth() {
+      state.addHasLesson = true;
+    }
+    function selectHasPrereq() {
+      state.addHasPrereq = !state.addHasPrereq;
+    }
+    function goNext() {
+      state.nextPage = true;
+    }
+    function goBack() {
+      state.nextPage = false;
+    }
+    function showNext() {
+      state.pageIdx += 1;
+    }
+    function showPrevious() {
+      state.pageIdx -= 1;
+    }
+    function cancelAdd() {
+      state.addURL = null;
+      state.addName = null;
+      state.addID = null;
+      state.addPrice = null;
+      state.addPrereq = null;
+      state.addDesc = null;
+      state.addScroll = false;
+      state.nextPage = false;
+    }
+
+    /**
+     * Returns whether user is the owner of this shop
+     *
+     * @param {address} address ethereum address
+     * @return {bool} ownership.
+     */
+    async function addScroll() {
+      //   addURL: null,
+      //   addName: null,
+      //   addID: null,
+      //   addPrice: null,
+      //   addHasPrereq: false,
+      //   addPrereq: null,
+      //   addDesc: null,
+      //   addHasLesson: false,
+      state.primary2 = "<i class='fas fa-spinner fa-spin'></i>";
+      /**
+       * TODO: Validate data properly before sending to rinkeby
+       * * My suggestion is that we should use vee-validate later
+       */
+      store.dispatch(
+        'User/setDialog',
+        'We are processing your transaction! It will take a while.',
+      );
+
+      const preRequisite = web3.utils.isAddress(state.addPrereq)
+        ? state.addPrereq
+        : '0x0000000000000000000000000000000000000000';
+      const price = web3.utils.toWei(state.addPrice, 'ether');
+      const hasPrerequisite = state.addHasPrereq;
+      const hasLesson = state.addHasLesson;
+
+      const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
+      const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
+
+      try {
+        const caller = await magicShop.methods
+          .addScroll(preRequisite, hasLesson, hasPrerequisite, price)
+          .send({ from: realAddress });
+        console.log(caller.events.ScrollAdded.returnValues);
+        console.log(caller.events.ScrollAdded.returnValues.scrollID);
+        const requestOptions = {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url: state.addURL,
+            address: shopAddress,
+            tokenId: caller.events.ScrollAdded.returnValues.scrollID,
+            name: state.addName,
+            courseId: state.addID,
+            description: state.addDesc,
+          }),
+        };
+        const response = await fetch(
+          'https://us-central1-deguild-2021.cloudfunctions.net/shop/addMagicScroll',
+          requestOptions,
+        );
+        const data = await response.json();
+        console.log(data);
+        state.primary2 = 'Add';
+        cancelAdd();
+        store.dispatch(
+          'User/setDialog',
+          'Transaction completed! I will tell the customers about it!',
+        );
+
+        return caller;
+      } catch (error) {
+        return false;
+      }
+    }
+
     function showAll() {
       state.showAll = true;
       state.showExam = false;
       state.showBoth = false;
+      state.pageIdx = 0;
+
       state.images = computed(() => (store.state.User.scrollList ? store.state.User.scrollList : []));
       store.dispatch('User/setDialog', 'All scrolls are shown.');
     }
@@ -465,6 +605,8 @@ export default defineComponent({
       state.showBoth = true;
       state.showExam = false;
       state.showAll = false;
+      state.pageIdx = 0;
+
       state.images = computed(() => (store.state.User.scrollList
         ? store.state.User.scrollList.filter((obj) => obj.hasLesson)
         : []));
@@ -477,6 +619,8 @@ export default defineComponent({
       state.showExam = true;
       state.showBoth = false;
       state.showAll = false;
+      state.pageIdx = 0;
+
       state.images = computed(() => (store.state.User.scrollList
         ? store.state.User.scrollList.filter((obj) => !obj.hasLesson)
         : []));
@@ -484,26 +628,6 @@ export default defineComponent({
         'User/setDialog',
         'These scrolls let you earn certificate, but you do not get to learn the lessons',
       );
-    }
-    function addScroll() {
-      state.addScroll = true;
-      state.imageSelected = null;
-    }
-    function cancelAdd() {
-      state.addURL = null;
-      state.addName = null;
-      state.addID = null;
-      state.addPrice = null;
-      state.addPrereq = null;
-      state.addDesc = null;
-      state.addScroll = false;
-      state.nextPage = false;
-    }
-    function goNext() {
-      state.nextPage = true;
-    }
-    function goBack() {
-      state.nextPage = false;
     }
 
     return {
@@ -515,10 +639,16 @@ export default defineComponent({
       showExam,
       moreInfo,
       buy,
-      addScroll,
+      addScrollToggle,
       cancelAdd,
       goNext,
       goBack,
+      addScroll,
+      selectExam,
+      selectBoth,
+      selectHasPrereq,
+      showNext,
+      showPrevious,
       owner,
       previewUrl,
     };
@@ -598,7 +728,7 @@ export default defineComponent({
     background: rgba(0, 0, 0, 0.5);
   }
 }
-.navButton {
+.Button {
   display: flex;
   cursor: pointer;
 
@@ -634,6 +764,29 @@ export default defineComponent({
   text-shadow: 0px 2px 4px rgba(91, 26, 26, 0.14),
     0px 3px 4px rgba(123, 12, 12, 0.12), 0px 1px 5px rgba(136, 13, 13, 0.2);
 
+  &.hasPrereq {
+    width: 19vw;
+    top: 4vw;
+    left: 4vw;
+
+    background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.25) 0%,
+        rgba(255, 255, 255, 0) 100%
+      ),
+      #3c6e3f;
+    background-blend-mode: soft-light, normal;
+    border-radius: 2vw;
+    &.disabled {
+      background: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0.25) 0%,
+          rgba(255, 255, 255, 0) 100%
+        ),
+        #a7a7a7;
+    }
+  }
+
   &.addScroll {
     width: 15.938vw;
     top: 18.125vw;
@@ -667,6 +820,19 @@ export default defineComponent({
         ),
         #a7a7a7;
     }
+    &.add {
+      width: 8vw;
+      left: 14vw;
+      top: 9vw;
+      &.disabled {
+        background: linear-gradient(
+            180deg,
+            rgba(0, 0, 0, 0.25) 0%,
+            rgba(255, 255, 255, 0) 100%
+          ),
+          #a7a7a7;
+      }
+    }
   }
 
   &.both {
@@ -679,6 +845,19 @@ export default defineComponent({
           rgba(255, 255, 255, 0) 100%
         ),
         #a7a7a7;
+    }
+    &.add {
+      width: 8vw;
+      left: 23vw;
+      top: 9vw;
+      &.disabled {
+        background: linear-gradient(
+            180deg,
+            rgba(0, 0, 0, 0.25) 0%,
+            rgba(255, 255, 255, 0) 100%
+          ),
+          #a7a7a7;
+      }
     }
   }
 
@@ -823,7 +1002,7 @@ export default defineComponent({
     &.url {
       text-align: center;
       left: 12.5vw;
-      top: 6vw;
+      top: 4vw;
       width: 19.5vw;
     }
 
@@ -842,7 +1021,7 @@ export default defineComponent({
     }
 
     &.prereq {
-      top: 6vw;
+      top: 7vw;
       height: 4vw;
     }
 
@@ -850,6 +1029,10 @@ export default defineComponent({
       text-align: start;
       top: 13vw;
       height: 12vw;
+
+      &.no-prerequisite {
+        top: 7vw;
+      }
     }
   }
 }
