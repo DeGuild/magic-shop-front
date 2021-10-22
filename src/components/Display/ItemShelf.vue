@@ -1,43 +1,44 @@
 <template>
   <div class="selection">
     <div class="background"></div>
-      <div v-for="imageIndex in 8" :key="imageIndex">
-        <div
-          class="background frame"
-          :style="state.stylesFrame[imageIndex]"
-        ></div>
-        <div
-          class="half-circle-spinner"
+    <div v-for="imageIndex in 8" :key="imageIndex">
+      <div
+        class="background frame"
+        :style="state.stylesFrame[imageIndex]"
+      ></div>
+      <div
+        class="half-circle-spinner"
+        :style="state.styles[imageIndex]"
+        v-if="state.loading"
+      >
+        <div class="half-circle-spinner circle circle-1"></div>
+        <div class="half-circle-spinner circle circle-2"></div>
+      </div>
+      <div
+        class="image"
+        :style="state.styles[imageIndex]"
+        v-if="state.images[imageIndex - 1]"
+      >
+        <img
+          class="image display click"
           :style="state.styles[imageIndex]"
-          v-if="state.loading"
-        >
-          <div class="half-circle-spinner circle circle-1"></div>
-          <div class="half-circle-spinner circle circle-2"></div>
-        </div>
-        <div
-          class="image"
-          :style="state.styles[imageIndex]"
-          v-if="state.images[imageIndex - 1]"
-        >
-          <img
-            class="image display click"
-            :style="state.styles[imageIndex]"
-            :src="state.images[imageIndex - 1].url"
-            v-on:click="choosing(imageIndex - 1)"
-          />
-        </div>
+          :src="state.images[imageIndex - 1].url"
+          v-on:click="choosing(imageIndex - 1)"
+        />
+      </div>
     </div>
     <button
       class="navButton addScroll"
       v-on:click="addScroll"
-      >
+      v-if="owner && !state.addScroll"
+    >
       Add Scroll
     </button>
     <button
       class="navButton addScroll cancel"
       v-if="state.addScroll"
       v-on:click="cancelAdd"
-      >
+    >
       Cancel
     </button>
     <button
@@ -94,7 +95,11 @@
           <div class="text description">
             {{ state.imageSelected.description }}
           </div>
-          <button class="navButton buy" v-on:click="buy()" v-html="state.primary"></button>
+          <button
+            class="navButton buy"
+            v-on:click="buy()"
+            v-html="state.primary"
+          ></button>
           <div class="text price">{{ state.imageSelected.price }} DGT</div>
         </div>
         <div v-if="!state.imageSelected.purchasable">
@@ -109,9 +114,7 @@
           <div class="text description">
             {{ state.imageSelected.description }}
           </div>
-          <div class="navButton inaccessible">
-            INACCESSIBLE
-          </div>
+          <div class="navButton inaccessible">INACCESSIBLE</div>
           <button class="navButton info" v-on:click="moreInfo()">
             MORE INFO
           </button>
@@ -120,20 +123,47 @@
       </div>
     </div>
   </div>
-   <div class="selection item" v-if="state.addScroll">
+  <div class="selection item" v-if="state.addScroll">
     <div class="background item-box">
       <div class="background current-item-frame" />
-        <input class="text course url" v-model="state.addURL" placeholder="Picture URL">
-        <input class="text course name" v-model="state.addName" placeholder="Course Name">
-        <input class="text course id" v-model="state.addID" placeholder="Course ID">
-        <input class="text course set-price" v-model="state.addPrice" placeholder="Price">
-        <button class="navButton buy" v-on:click="goNext">NEXT</button>
+      <div class="image selected">
+        <img class="image selected display" :src="previewUrl" />
+      </div>
+      <input
+        class="text course url"
+        v-model="state.addURL"
+        placeholder="Picture URL"
+      />
+      <input
+        class="text course name"
+        v-model="state.addName"
+        placeholder="Course Name"
+      />
+      <input
+        class="text course id"
+        v-model="state.addID"
+        placeholder="Course ID"
+      />
+      <input
+        class="text course set-price"
+        v-model="state.addPrice"
+        placeholder="Price"
+      />
+      <button class="navButton buy" v-on:click="goNext">NEXT</button>
     </div>
   </div>
   <div class="selection item" v-if="state.nextPage">
     <div class="background item-box">
-      <input class="text course prereq" v-model="state.addPrereq" placeholder="Course Prerequisite">
-      <input class="text course desc" v-model="state.addDesc" placeholder="Course Description">
+      <input
+        class="text course prereq"
+        v-model="state.addPrereq"
+        placeholder="Course Prerequisite"
+      />
+      <textarea
+        class="text course desc"
+        v-model="state.addDesc"
+        placeholder="Course Description"
+      ></textarea>
       <button class="navButton back" v-on:click="goBack">BACK</button>
       <button class="navButton buy">ADD</button>
     </div>
@@ -154,12 +184,14 @@ const shopAddress = '0x1B362371f11cAA26B1A993f7Ffd711c0B9966f70';
 // const dgcABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/Tokens/DeGuildCoinERC20.sol/DeGuildCoinERC20.json').abi;
 const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/IMagicScrolls.sol/IMagicScrolls.json').abi;
 const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/ISkillCertificate.sol/ISkillCertificate.json').abi;
+const noUrl = require('@/assets/no-url.jpg');
 
 export default defineComponent({
   name: 'ItemShelf',
   setup() {
     const store = useStore();
     const web3 = new Web3(Web3.givenProvider || 'ws://localhost:8545');
+    const owner = computed(() => store.state.User.owner);
 
     const state = reactive({
       primary: 'BUY',
@@ -174,8 +206,7 @@ export default defineComponent({
       addPrice: null,
       addPrereq: null,
       addDesc: null,
-      scrollSelected: computed(() => (store.state.User.selectedScroll
-        ? store.state.User.selectedScroll : null)),
+      scrollSelected: computed(() => (store.state.User.selectedScroll ? store.state.User.selectedScroll : null)),
       loading: computed(() => store.state.User.fetching),
       pageIdx: 0,
       images: computed(() => (store.state.User.scrollList ? store.state.User.scrollList : [])),
@@ -252,6 +283,20 @@ export default defineComponent({
       ],
     });
 
+    function validURL(str) {
+      const pattern = new RegExp('^(https?:\\/\\/)?' // protocol
+    + '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' // domain name
+    + '((\\d{1,3}\\.){3}\\d{1,3}))' // OR ip (v4) address
+    + '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' // port and path
+    + '(\\?[;&a-z\\d%_.~+=-]*)?' // query string
+    + '(\\#[-a-z\\d_]*)?$', 'i'); // fragment locator
+      return !!pattern.test(str);
+    }
+
+    const previewUrl = computed(() => (validURL(state.addURL)
+      ? state.addURL
+      : noUrl));
+
     function dummy() {
       console.log('Calling the dummy function');
       console.log(store.state.User.scrollList);
@@ -264,7 +309,10 @@ export default defineComponent({
      * @return {string} name of the contract.
      */
     async function getName(address) {
-      const certificateManager = new web3.eth.Contract(skillCertificateABI, address);
+      const certificateManager = new web3.eth.Contract(
+        skillCertificateABI,
+        address,
+      );
       const caller = await certificateManager.methods.name().call();
       return caller;
     }
@@ -276,7 +324,10 @@ export default defineComponent({
      * @return {string} name of the contract.
      */
     async function getTokenType(address) {
-      const certificateManager = new web3.eth.Contract(skillCertificateABI, address);
+      const certificateManager = new web3.eth.Contract(
+        skillCertificateABI,
+        address,
+      );
       const caller = await certificateManager.methods.typeAccepted().call();
       return caller;
     }
@@ -310,7 +361,10 @@ export default defineComponent({
      * @return {string} name of the contract.
      */
     async function isShopOwnPrerequisite(address) {
-      const certificateManager = new web3.eth.Contract(skillCertificateABI, address);
+      const certificateManager = new web3.eth.Contract(
+        skillCertificateABI,
+        address,
+      );
       const caller = await certificateManager.methods.shop().call();
       return caller === shopAddress;
     }
@@ -324,7 +378,10 @@ export default defineComponent({
     async function choosing(imageIdx) {
       state.imageSelected = state.images[imageIdx];
       // console.log(state.imageSelected);
-      store.dispatch('User/setDialog', 'Counting your owned scrolls for this one...');
+      store.dispatch(
+        'User/setDialog',
+        'Counting your owned scrolls for this one...',
+      );
       state.own = '...';
       state.own = await getBalanceOf(state.imageSelected);
 
@@ -332,7 +389,10 @@ export default defineComponent({
         store.dispatch('User/setDialog', 'Would you like to buy more?');
       } else {
         const prerequisite = await getName(state.imageSelected.prerequisite);
-        store.dispatch('User/setDialog', `You need to earn ${prerequisite} certificate first!`);
+        store.dispatch(
+          'User/setDialog',
+          `You need to earn ${prerequisite} certificate first!`,
+        );
       }
     }
 
@@ -349,9 +409,15 @@ export default defineComponent({
       // console.log(confirm, type, prerequisite);
       if (confirm) {
         await choosing(type);
-        store.dispatch('User/setDialog', `Please earn the certificate of this scroll, ${state.images[type].name}.`);
+        store.dispatch(
+          'User/setDialog',
+          `Please earn the certificate of this scroll, ${state.images[type].name}.`,
+        );
       } else {
-        store.dispatch('User/setDialog', `You are not verified by ${prerequisite}`);
+        store.dispatch(
+          'User/setDialog',
+          `You are not verified by ${prerequisite}`,
+        );
       }
     }
 
@@ -363,7 +429,10 @@ export default defineComponent({
      */
     async function buy() {
       state.primary = "<i class='fas fa-spinner fa-spin'></i>";
-      store.dispatch('User/setDialog', 'We are processing your transaction! It will take a while.');
+      store.dispatch(
+        'User/setDialog',
+        'We are processing your transaction! It will take a while.',
+      );
 
       const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
       const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
@@ -374,7 +443,10 @@ export default defineComponent({
           .send({ from: realAddress });
         state.primary = 'Buy';
         await choosing(tokenId);
-        store.dispatch('User/setDialog', 'Transaction completed! Thank you for doing business with us~');
+        store.dispatch(
+          'User/setDialog',
+          'Transaction completed! Thank you for doing business with us~',
+        );
 
         return caller;
       } catch (error) {
@@ -393,15 +465,25 @@ export default defineComponent({
       state.showBoth = true;
       state.showExam = false;
       state.showAll = false;
-      state.images = computed(() => (store.state.User.scrollList ? store.state.User.scrollList.filter((obj) => obj.hasLesson) : []));
-      store.dispatch('User/setDialog', 'These scrolls will teach you skills and let you earn certificate.');
+      state.images = computed(() => (store.state.User.scrollList
+        ? store.state.User.scrollList.filter((obj) => obj.hasLesson)
+        : []));
+      store.dispatch(
+        'User/setDialog',
+        'These scrolls will teach you skills and let you earn certificate.',
+      );
     }
     function showExam() {
       state.showExam = true;
       state.showBoth = false;
       state.showAll = false;
-      state.images = computed(() => (store.state.User.scrollList ? store.state.User.scrollList.filter((obj) => !obj.hasLesson) : []));
-      store.dispatch('User/setDialog', 'These scrolls let you earn certificate, but you do not get to learn the lessons');
+      state.images = computed(() => (store.state.User.scrollList
+        ? store.state.User.scrollList.filter((obj) => !obj.hasLesson)
+        : []));
+      store.dispatch(
+        'User/setDialog',
+        'These scrolls let you earn certificate, but you do not get to learn the lessons',
+      );
     }
     function addScroll() {
       state.addScroll = true;
@@ -437,6 +519,8 @@ export default defineComponent({
       cancelAdd,
       goNext,
       goBack,
+      owner,
+      previewUrl,
     };
   },
 });
@@ -554,11 +638,11 @@ export default defineComponent({
     width: 15.938vw;
     top: 18.125vw;
     left: 80vw;
-    background: #9002FF;
+    background: #9002ff;
 
     &.cancel {
       left: 45.625vw;
-      background: #C39B44;
+      background: #c39b44;
     }
   }
 
@@ -640,7 +724,7 @@ export default defineComponent({
     }
   }
 
-  &.inaccessible{
+  &.inaccessible {
     width: 11.615vw;
     top: 30vw;
     left: 20.4vw;
@@ -656,7 +740,7 @@ export default defineComponent({
     border-radius: 2vw;
   }
 
-  &.info{
+  &.info {
     width: 11.615vw;
     top: 30vw;
     left: 3.5vw;
@@ -666,16 +750,16 @@ export default defineComponent({
         rgba(0, 0, 0, 0.25) 0%,
         rgba(255, 255, 255, 0) 100%
       ),
-      #2F103E;
+      #2f103e;
     background-blend-mode: soft-light, normal;
     border-radius: 2vw;
   }
 
-  &.back{
+  &.back {
     width: 11.615vw;
     top: 30vw;
     left: 4vw;
-    background: #1B83E2;
+    background: #1b83e2;
   }
 }
 
@@ -737,10 +821,10 @@ export default defineComponent({
     color: rgba(26, 26, 26, 0.6);
 
     &.url {
-    text-align: center;
-    left: 12.5vw;
-    top: 6vw;
-    width: 19.5vw;
+      text-align: center;
+      left: 12.5vw;
+      top: 6vw;
+      width: 19.5vw;
     }
 
     &.name {
@@ -753,17 +837,18 @@ export default defineComponent({
 
     &.set-price {
       height: 3vw;
-      width: 5vw;
+      width: 11vw;
       top: 30vw;
     }
 
     &.prereq {
       top: 6vw;
-      height: 6vw;
+      height: 4vw;
     }
 
     &.desc {
-      top: 15vw;
+      text-align: start;
+      top: 13vw;
       height: 12vw;
     }
   }
