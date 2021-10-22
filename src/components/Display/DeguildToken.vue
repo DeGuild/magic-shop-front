@@ -11,6 +11,10 @@ import { useStore } from 'vuex';
 // import { useRoute } from 'vue-router';
 import { computed } from 'vue';
 
+/*
+ * TODO: We will work on this component later, it will show how much DGT the user have
+ */
+
 export default {
   name: 'TokenDisplay',
   setup() {
