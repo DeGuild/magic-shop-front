@@ -209,8 +209,6 @@ import { useStore } from 'vuex';
 const Web3 = require('web3');
 
 const shopAddress = '0x1B362371f11cAA26B1A993f7Ffd711c0B9966f70';
-// const dgcAddress = '0x4312D992940D0b110525f553160c9984b77D1EF4';
-// const dgcABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/Tokens/DeGuildCoinERC20.sol/DeGuildCoinERC20.json').abi;
 const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/IMagicScrolls.sol/IMagicScrolls.json').abi;
 const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/ISkillCertificate.sol/ISkillCertificate.json').abi;
 const noUrl = require('@/assets/no-url.jpg');
@@ -332,11 +330,6 @@ export default defineComponent({
     }
 
     const previewUrl = computed(() => (validURL(state.addURL) ? state.addURL : noUrl));
-
-    function dummy() {
-      console.log('Calling the dummy function');
-      console.log(store.state.User.scrollList);
-    }
 
     /**
      * Returns name of the address.
@@ -503,6 +496,10 @@ export default defineComponent({
     function addScrollToggle() {
       state.addScroll = true;
       state.imageSelected = null;
+      store.dispatch(
+        'User/setDialog',
+        'What kind of scroll would you like to add?',
+      );
     }
     function selectExam() {
       state.addHasLesson = false;
@@ -526,6 +523,12 @@ export default defineComponent({
       state.pageIdx -= 1;
     }
     function cancelAdd() {
+      if (!state.adding) {
+        store.dispatch(
+          'User/setDialog',
+          'Cancelled! No scroll will be added!',
+        );
+      }
       state.addURL = null;
       state.addName = null;
       state.addID = null;
@@ -568,8 +571,6 @@ export default defineComponent({
         const caller = await magicShop.methods
           .addScroll(preRequisite, hasLesson, hasPrerequisite, price)
           .send({ from: realAddress });
-        console.log(caller.events.ScrollAdded.returnValues);
-        console.log(caller.events.ScrollAdded.returnValues.scrollID);
         const requestOptions = {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -582,20 +583,18 @@ export default defineComponent({
             description: state.addDesc,
           }),
         };
-        const response = await fetch(
+        await fetch(
           'https://us-central1-deguild-2021.cloudfunctions.net/shop/addMagicScroll',
           requestOptions,
         );
-        const data = await response.json();
-        console.log(data);
-        state.primary2 = 'Add';
-        state.adding = false;
 
         cancelAdd();
         store.dispatch(
           'User/setDialog',
           'Transaction completed! I will tell the customers about it!',
         );
+        state.primary2 = 'Add';
+        state.adding = false;
 
         return caller;
       } catch (error) {
@@ -650,7 +649,6 @@ export default defineComponent({
 
     return {
       state,
-      dummy,
       choosing,
       showAll,
       showBoth,
