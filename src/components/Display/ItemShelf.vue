@@ -17,13 +17,13 @@
       <div
         class="image"
         :style="state.styles[imageIndex]"
-        v-if="state.images[imageIndex + state.pageIdx*8 - 1]"
+        v-if="state.images[imageIndex + state.pageIdx * 8 - 1]"
       >
         <img
           class="image display click"
           :style="state.styles[imageIndex]"
-          :src="state.images[imageIndex + state.pageIdx*8 - 1].url"
-          v-on:click="choosing(imageIndex + state.pageIdx*8 - 1)"
+          :src="state.images[imageIndex + state.pageIdx * 8 - 1].url"
+          v-on:click="choosing(imageIndex + state.pageIdx * 8 - 1)"
         />
       </div>
     </div>
@@ -98,6 +98,8 @@
           <button
             class="Button buy"
             v-on:click="buy()"
+            :class="{ disabled: state.buying }"
+            :disabled="state.buying"
             v-html="state.primary"
           ></button>
           <div class="text price">{{ state.imageSelected.price }} DGT</div>
@@ -190,6 +192,8 @@
         class="Button buy"
         v-html="state.primary2"
         v-on:click="addScroll"
+        :class="{ disabled: state.adding }"
+        :disabled="state.adding"
       ></button>
     </div>
   </div>
@@ -235,6 +239,8 @@ export default defineComponent({
       addPrereq: null,
       addDesc: null,
       addHasLesson: false,
+      buying: false,
+      adding: false,
       scrollSelected: computed(() => (store.state.User.selectedScroll ? store.state.User.selectedScroll : null)),
       loading: computed(() => store.state.User.fetching),
       pageIdx: 0,
@@ -459,6 +465,7 @@ export default defineComponent({
      */
     async function buy() {
       state.primary = "<i class='fas fa-spinner fa-spin'></i>";
+      state.buying = true;
       store.dispatch(
         'User/setDialog',
         'We are processing your transaction! It will take a while.',
@@ -477,9 +484,18 @@ export default defineComponent({
           'User/setDialog',
           'Transaction completed! Thank you for doing business with us~',
         );
+        state.buying = false;
 
         return caller;
       } catch (error) {
+        state.primary = 'Buy';
+        state.buying = false;
+
+        store.dispatch(
+          'User/setDialog',
+          'Transaction rejected! Have you changed your mind?',
+        );
+
         return false;
       }
     }
@@ -527,15 +543,8 @@ export default defineComponent({
      * @return {bool} ownership.
      */
     async function addScroll() {
-      //   addURL: null,
-      //   addName: null,
-      //   addID: null,
-      //   addPrice: null,
-      //   addHasPrereq: false,
-      //   addPrereq: null,
-      //   addDesc: null,
-      //   addHasLesson: false,
       state.primary2 = "<i class='fas fa-spinner fa-spin'></i>";
+      state.adding = true;
       /**
        * TODO: Validate data properly before sending to rinkeby
        * * My suggestion is that we should use vee-validate later
@@ -580,6 +589,8 @@ export default defineComponent({
         const data = await response.json();
         console.log(data);
         state.primary2 = 'Add';
+        state.adding = false;
+
         cancelAdd();
         store.dispatch(
           'User/setDialog',
@@ -588,6 +599,13 @@ export default defineComponent({
 
         return caller;
       } catch (error) {
+        state.primary2 = 'Add';
+        state.adding = false;
+
+        store.dispatch(
+          'User/setDialog',
+          'Transaction rejected! Have you changed your mind?',
+        );
         return false;
       }
     }
@@ -900,6 +918,7 @@ export default defineComponent({
           rgba(255, 255, 255, 0) 100%
         ),
         #a7a7a7;
+      cursor: wait;
     }
   }
 
