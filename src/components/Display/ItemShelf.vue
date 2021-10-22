@@ -1,76 +1,77 @@
 <template>
   <div class="selection">
     <div class="background"></div>
-      <div v-for="imageIndex in 8" :key="imageIndex">
-        <div
-          class="background frame"
-          :style="state.stylesFrame[imageIndex]"
-        ></div>
-        <div
-          class="half-circle-spinner"
+    <div v-for="imageIndex in 8" :key="imageIndex">
+      <div
+        class="background frame"
+        :style="state.stylesFrame[imageIndex]"
+      ></div>
+      <div
+        class="half-circle-spinner"
+        :style="state.styles[imageIndex]"
+        v-if="state.loading"
+      >
+        <div class="half-circle-spinner circle circle-1"></div>
+        <div class="half-circle-spinner circle circle-2"></div>
+      </div>
+      <div
+        class="image"
+        :style="state.styles[imageIndex]"
+        v-if="state.images[imageIndex + state.pageIdx * 8 - 1]"
+      >
+        <img
+          class="image display click"
           :style="state.styles[imageIndex]"
-          v-if="state.loading"
-        >
-          <div class="half-circle-spinner circle circle-1"></div>
-          <div class="half-circle-spinner circle circle-2"></div>
-        </div>
-        <div
-          class="image"
-          :style="state.styles[imageIndex]"
-          v-if="state.images[imageIndex - 1]"
-        >
-          <img
-            class="image display click"
-            :style="state.styles[imageIndex]"
-            :src="state.images[imageIndex - 1].url"
-            v-on:click="choosing(imageIndex - 1)"
-          />
-        </div>
+          :src="state.images[imageIndex + state.pageIdx * 8 - 1].url"
+          v-on:click="choosing(imageIndex + state.pageIdx * 8 - 1)"
+        />
+      </div>
     </div>
     <button
-      class="navButton addScroll"
-      v-on:click="addScroll"
-      >
+      class="Button addScroll"
+      v-on:click="addScrollToggle"
+      v-if="owner && !state.addScroll"
+    >
       Add Scroll
     </button>
     <button
-      class="navButton addScroll cancel"
+      class="Button addScroll cancel"
       v-if="state.addScroll"
       v-on:click="cancelAdd"
-      >
+    >
       Cancel
     </button>
     <button
-      class="navButton previous"
-      v-on:click="dummy()"
+      class="Button previous"
+      v-on:click="showPrevious()"
       v-if="state.pageIdx > 0"
     >
       &#60;
     </button>
     <button
-      class="navButton exam"
+      class="Button exam"
       :class="{ disabled: !state.showExam }"
       v-on:click="showExam"
     >
       Exam Only
     </button>
     <button
-      class="navButton both"
+      class="Button both"
       :class="{ disabled: !state.showBoth }"
       v-on:click="showBoth"
     >
       Both
     </button>
     <button
-      class="navButton all"
+      class="Button all"
       :class="{ disabled: !state.showAll }"
       v-on:click="showAll"
     >
       All
     </button>
     <button
-      class="navButton"
-      v-on:click="dummy()"
+      class="Button"
+      v-on:click="showNext()"
       v-if="state.pageIdx < state.images.length / 8 - 1"
     >
       &#62;
@@ -94,7 +95,13 @@
           <div class="text description">
             {{ state.imageSelected.description }}
           </div>
-          <button class="navButton buy" v-on:click="buy()" v-html="state.primary"></button>
+          <button
+            class="Button buy"
+            v-on:click="buy()"
+            :class="{ disabled: state.buying }"
+            :disabled="state.buying"
+            v-html="state.primary"
+          ></button>
           <div class="text price">{{ state.imageSelected.price }} DGT</div>
         </div>
         <div v-if="!state.imageSelected.purchasable">
@@ -109,33 +116,85 @@
           <div class="text description">
             {{ state.imageSelected.description }}
           </div>
-          <div class="navButton inaccessible">
-            INACCESSIBLE
-          </div>
-          <button class="navButton info" v-on:click="moreInfo()">
-            MORE INFO
-          </button>
+          <div class="Button inaccessible">INACCESSIBLE</div>
+          <button class="Button info" v-on:click="moreInfo()">MORE INFO</button>
           <div class="text price">{{ state.imageSelected.price }} DGT</div>
         </div>
       </div>
     </div>
   </div>
-   <div class="selection item" v-if="state.addScroll">
+  <div class="selection item" v-if="state.addScroll">
     <div class="background item-box">
       <div class="background current-item-frame" />
-        <input class="text course url" v-model="state.addURL" placeholder="Picture URL">
-        <input class="text course name" v-model="state.addName" placeholder="Course Name">
-        <input class="text course id" v-model="state.addID" placeholder="Course ID">
-        <input class="text course set-price" v-model="state.addPrice" placeholder="Price">
-        <button class="navButton buy" v-on:click="goNext">NEXT</button>
+      <div class="image selected">
+        <img class="image selected display" :src="previewUrl" />
+      </div>
+      <input
+        class="text course url"
+        v-model="state.addURL"
+        placeholder="Picture URL"
+      />
+      <input
+        class="text course name"
+        v-model="state.addName"
+        placeholder="Course Name"
+      />
+      <input
+        class="text course id"
+        v-model="state.addID"
+        placeholder="Course ID"
+      />
+      <input
+        class="text course set-price"
+        v-model="state.addPrice"
+        placeholder="Price"
+      />
+      <button
+        class="Button exam add"
+        :class="{ disabled: state.addHasLesson }"
+        v-on:click="selectExam()"
+      >
+        Exam Only
+      </button>
+      <button
+        class="Button both add"
+        :class="{ disabled: !state.addHasLesson }"
+        v-on:click="selectBoth()"
+      >
+        Both
+      </button>
+
+      <button class="Button buy" v-on:click="goNext">NEXT</button>
     </div>
   </div>
   <div class="selection item" v-if="state.nextPage">
     <div class="background item-box">
-      <input class="text course prereq" v-model="state.addPrereq" placeholder="Course Prerequisite">
-      <input class="text course desc" v-model="state.addDesc" placeholder="Course Description">
-      <button class="navButton back" v-on:click="goBack">BACK</button>
-      <button class="navButton buy">ADD</button>
+      <input
+        class="text course prereq"
+        v-model="state.addPrereq"
+        placeholder="Course Prerequisite"
+        v-show="state.addHasPrereq"
+      />
+      <textarea
+        class="text course desc"
+        v-model="state.addDesc"
+        :class="{ 'no-prerequisite': !state.addHasPrereq }"
+        placeholder="Course Description"
+      ></textarea>
+      <button
+        class="Button hasPrereq"
+        v-on:click="selectHasPrereq()"
+        v-html="state.primary3"
+        :class="{ disabled: !state.addHasPrereq }"
+      ></button>
+      <button class="Button back" v-on:click="goBack">BACK</button>
+      <button
+        class="Button buy"
+        v-html="state.primary2"
+        v-on:click="addScroll"
+        :class="{ disabled: state.adding }"
+        :disabled="state.adding"
+      ></button>
     </div>
   </div>
 </template>
@@ -150,21 +209,23 @@ import { useStore } from 'vuex';
 const Web3 = require('web3');
 
 const shopAddress = '0x1B362371f11cAA26B1A993f7Ffd711c0B9966f70';
-// const dgcAddress = '0x4312D992940D0b110525f553160c9984b77D1EF4';
-// const dgcABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/Tokens/DeGuildCoinERC20.sol/DeGuildCoinERC20.json').abi;
 const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/IMagicScrolls.sol/IMagicScrolls.json').abi;
 const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/ISkillCertificate.sol/ISkillCertificate.json').abi;
+const noUrl = require('@/assets/no-url.jpg');
 
 export default defineComponent({
   name: 'ItemShelf',
   setup() {
     const store = useStore();
     const web3 = new Web3(Web3.givenProvider || 'ws://localhost:8545');
+    const owner = computed(() => store.state.User.owner);
 
     const state = reactive({
       primary: 'BUY',
+      primary2: 'ADD',
+      primary3: 'Require prerequisite',
       addScroll: false,
-      showBoth: true,
+      showBoth: false,
       showExam: false,
       showAll: false,
       nextPage: false,
@@ -172,10 +233,13 @@ export default defineComponent({
       addName: null,
       addID: null,
       addPrice: null,
+      addHasPrereq: false,
       addPrereq: null,
       addDesc: null,
-      scrollSelected: computed(() => (store.state.User.selectedScroll
-        ? store.state.User.selectedScroll : null)),
+      addHasLesson: false,
+      buying: false,
+      adding: false,
+      scrollSelected: computed(() => (store.state.User.selectedScroll ? store.state.User.selectedScroll : null)),
       loading: computed(() => store.state.User.fetching),
       pageIdx: 0,
       images: computed(() => (store.state.User.scrollList ? store.state.User.scrollList : [])),
@@ -252,10 +316,20 @@ export default defineComponent({
       ],
     });
 
-    function dummy() {
-      console.log('Calling the dummy function');
-      console.log(store.state.User.scrollList);
+    function validURL(str) {
+      const pattern = new RegExp(
+        '^(https?:\\/\\/)?' // protocol
+          + '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' // domain name
+          + '((\\d{1,3}\\.){3}\\d{1,3}))' // OR ip (v4) address
+          + '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' // port and path
+          + '(\\?[;&a-z\\d%_.~+=-]*)?' // query string
+          + '(\\#[-a-z\\d_]*)?$',
+        'i',
+      ); // fragment locator
+      return !!pattern.test(str);
     }
+
+    const previewUrl = computed(() => (validURL(state.addURL) ? state.addURL : noUrl));
 
     /**
      * Returns name of the address.
@@ -264,7 +338,10 @@ export default defineComponent({
      * @return {string} name of the contract.
      */
     async function getName(address) {
-      const certificateManager = new web3.eth.Contract(skillCertificateABI, address);
+      const certificateManager = new web3.eth.Contract(
+        skillCertificateABI,
+        address,
+      );
       const caller = await certificateManager.methods.name().call();
       return caller;
     }
@@ -276,7 +353,10 @@ export default defineComponent({
      * @return {string} name of the contract.
      */
     async function getTokenType(address) {
-      const certificateManager = new web3.eth.Contract(skillCertificateABI, address);
+      const certificateManager = new web3.eth.Contract(
+        skillCertificateABI,
+        address,
+      );
       const caller = await certificateManager.methods.typeAccepted().call();
       return caller;
     }
@@ -310,7 +390,10 @@ export default defineComponent({
      * @return {string} name of the contract.
      */
     async function isShopOwnPrerequisite(address) {
-      const certificateManager = new web3.eth.Contract(skillCertificateABI, address);
+      const certificateManager = new web3.eth.Contract(
+        skillCertificateABI,
+        address,
+      );
       const caller = await certificateManager.methods.shop().call();
       return caller === shopAddress;
     }
@@ -324,7 +407,10 @@ export default defineComponent({
     async function choosing(imageIdx) {
       state.imageSelected = state.images[imageIdx];
       // console.log(state.imageSelected);
-      store.dispatch('User/setDialog', 'Counting your owned scrolls for this one...');
+      store.dispatch(
+        'User/setDialog',
+        'Counting your owned scrolls for this one...',
+      );
       state.own = '...';
       state.own = await getBalanceOf(state.imageSelected);
 
@@ -332,7 +418,10 @@ export default defineComponent({
         store.dispatch('User/setDialog', 'Would you like to buy more?');
       } else {
         const prerequisite = await getName(state.imageSelected.prerequisite);
-        store.dispatch('User/setDialog', `You need to earn ${prerequisite} certificate first!`);
+        store.dispatch(
+          'User/setDialog',
+          `You need to earn ${prerequisite} certificate first!`,
+        );
       }
     }
 
@@ -349,9 +438,15 @@ export default defineComponent({
       // console.log(confirm, type, prerequisite);
       if (confirm) {
         await choosing(type);
-        store.dispatch('User/setDialog', `Please earn the certificate of this scroll, ${state.images[type].name}.`);
+        store.dispatch(
+          'User/setDialog',
+          `Please earn the certificate of this scroll, ${state.images[type].name}.`,
+        );
       } else {
-        store.dispatch('User/setDialog', `You are not verified by ${prerequisite}`);
+        store.dispatch(
+          'User/setDialog',
+          `You are not verified by ${prerequisite}`,
+        );
       }
     }
 
@@ -363,7 +458,11 @@ export default defineComponent({
      */
     async function buy() {
       state.primary = "<i class='fas fa-spinner fa-spin'></i>";
-      store.dispatch('User/setDialog', 'We are processing your transaction! It will take a while.');
+      state.buying = true;
+      store.dispatch(
+        'User/setDialog',
+        'We are processing your transaction! It will take a while.',
+      );
 
       const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
       const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
@@ -374,40 +473,62 @@ export default defineComponent({
           .send({ from: realAddress });
         state.primary = 'Buy';
         await choosing(tokenId);
-        store.dispatch('User/setDialog', 'Transaction completed! Thank you for doing business with us~');
+        store.dispatch(
+          'User/setDialog',
+          'Transaction completed! Thank you for doing business with us~',
+        );
+        state.buying = false;
 
         return caller;
       } catch (error) {
+        state.primary = 'Buy';
+        state.buying = false;
+
+        store.dispatch(
+          'User/setDialog',
+          'Transaction rejected! Have you changed your mind?',
+        );
+
         return false;
       }
     }
 
-    function showAll() {
-      state.showAll = true;
-      state.showExam = false;
-      state.showBoth = false;
-      state.images = computed(() => (store.state.User.scrollList ? store.state.User.scrollList : []));
-      store.dispatch('User/setDialog', 'All scrolls are shown.');
-    }
-    function showBoth() {
-      state.showBoth = true;
-      state.showExam = false;
-      state.showAll = false;
-      state.images = computed(() => (store.state.User.scrollList ? store.state.User.scrollList.filter((obj) => obj.hasLesson) : []));
-      store.dispatch('User/setDialog', 'These scrolls will teach you skills and let you earn certificate.');
-    }
-    function showExam() {
-      state.showExam = true;
-      state.showBoth = false;
-      state.showAll = false;
-      state.images = computed(() => (store.state.User.scrollList ? store.state.User.scrollList.filter((obj) => !obj.hasLesson) : []));
-      store.dispatch('User/setDialog', 'These scrolls let you earn certificate, but you do not get to learn the lessons');
-    }
-    function addScroll() {
+    function addScrollToggle() {
       state.addScroll = true;
       state.imageSelected = null;
+      store.dispatch(
+        'User/setDialog',
+        'What kind of scroll would you like to add?',
+      );
+    }
+    function selectExam() {
+      state.addHasLesson = false;
+    }
+    function selectBoth() {
+      state.addHasLesson = true;
+    }
+    function selectHasPrereq() {
+      state.addHasPrereq = !state.addHasPrereq;
+    }
+    function goNext() {
+      state.nextPage = true;
+    }
+    function goBack() {
+      state.nextPage = false;
+    }
+    function showNext() {
+      state.pageIdx += 1;
+    }
+    function showPrevious() {
+      state.pageIdx -= 1;
     }
     function cancelAdd() {
+      if (!state.adding) {
+        store.dispatch(
+          'User/setDialog',
+          'Cancelled! No scroll will be added!',
+        );
+      }
       state.addURL = null;
       state.addName = null;
       state.addID = null;
@@ -417,26 +538,135 @@ export default defineComponent({
       state.addScroll = false;
       state.nextPage = false;
     }
-    function goNext() {
-      state.nextPage = true;
+
+    /**
+     * Returns whether user is the owner of this shop
+     *
+     * @param {address} address ethereum address
+     * @return {bool} ownership.
+     */
+    async function addScroll() {
+      state.primary2 = "<i class='fas fa-spinner fa-spin'></i>";
+      state.adding = true;
+      /**
+       * TODO: Validate data properly before sending to rinkeby
+       * * My suggestion is that we should use vee-validate later
+       */
+      store.dispatch(
+        'User/setDialog',
+        'We are processing your transaction! It will take a while.',
+      );
+
+      const preRequisite = web3.utils.isAddress(state.addPrereq)
+        ? state.addPrereq
+        : '0x0000000000000000000000000000000000000000';
+      const price = web3.utils.toWei(state.addPrice, 'ether');
+      const hasPrerequisite = state.addHasPrereq;
+      const hasLesson = state.addHasLesson;
+
+      const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
+      const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
+
+      try {
+        const caller = await magicShop.methods
+          .addScroll(preRequisite, hasLesson, hasPrerequisite, price)
+          .send({ from: realAddress });
+        const requestOptions = {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url: state.addURL,
+            address: shopAddress,
+            tokenId: caller.events.ScrollAdded.returnValues.scrollID,
+            name: state.addName,
+            courseId: state.addID,
+            description: state.addDesc,
+          }),
+        };
+        await fetch(
+          'https://us-central1-deguild-2021.cloudfunctions.net/shop/addMagicScroll',
+          requestOptions,
+        );
+
+        cancelAdd();
+        store.dispatch(
+          'User/setDialog',
+          'Transaction completed! I will tell the customers about it!',
+        );
+        state.primary2 = 'Add';
+        state.adding = false;
+
+        return caller;
+      } catch (error) {
+        state.primary2 = 'Add';
+        state.adding = false;
+
+        store.dispatch(
+          'User/setDialog',
+          'Transaction rejected! Have you changed your mind?',
+        );
+        return false;
+      }
     }
-    function goBack() {
-      state.nextPage = false;
+
+    function showAll() {
+      state.showAll = true;
+      state.showExam = false;
+      state.showBoth = false;
+      state.pageIdx = 0;
+
+      state.images = computed(() => (store.state.User.scrollList ? store.state.User.scrollList : []));
+      store.dispatch('User/setDialog', 'All scrolls are shown.');
+    }
+    function showBoth() {
+      state.showBoth = true;
+      state.showExam = false;
+      state.showAll = false;
+      state.pageIdx = 0;
+
+      state.images = computed(() => (store.state.User.scrollList
+        ? store.state.User.scrollList.filter((obj) => obj.hasLesson)
+        : []));
+      store.dispatch(
+        'User/setDialog',
+        'These scrolls will teach you skills and let you earn certificate.',
+      );
+    }
+    function showExam() {
+      state.showExam = true;
+      state.showBoth = false;
+      state.showAll = false;
+      state.pageIdx = 0;
+
+      state.images = computed(() => (store.state.User.scrollList
+        ? store.state.User.scrollList.filter((obj) => !obj.hasLesson)
+        : []));
+      store.dispatch(
+        'User/setDialog',
+        'These scrolls let you earn certificate, but you do not get to learn the lessons',
+      );
     }
 
     return {
       state,
-      dummy,
       choosing,
       showAll,
       showBoth,
       showExam,
       moreInfo,
       buy,
-      addScroll,
+      addScrollToggle,
       cancelAdd,
       goNext,
       goBack,
+      addScroll,
+      selectExam,
+      selectBoth,
+      selectHasPrereq,
+      showNext,
+      showPrevious,
+      owner,
+      previewUrl,
     };
   },
 });
@@ -514,7 +744,7 @@ export default defineComponent({
     background: rgba(0, 0, 0, 0.5);
   }
 }
-.navButton {
+.Button {
   display: flex;
   cursor: pointer;
 
@@ -550,15 +780,38 @@ export default defineComponent({
   text-shadow: 0px 2px 4px rgba(91, 26, 26, 0.14),
     0px 3px 4px rgba(123, 12, 12, 0.12), 0px 1px 5px rgba(136, 13, 13, 0.2);
 
+  &.hasPrereq {
+    width: 19vw;
+    top: 4vw;
+    left: 4vw;
+
+    background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.25) 0%,
+        rgba(255, 255, 255, 0) 100%
+      ),
+      #3c6e3f;
+    background-blend-mode: soft-light, normal;
+    border-radius: 2vw;
+    &.disabled {
+      background: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0.25) 0%,
+          rgba(255, 255, 255, 0) 100%
+        ),
+        #a7a7a7;
+    }
+  }
+
   &.addScroll {
     width: 15.938vw;
     top: 18.125vw;
     left: 80vw;
-    background: #9002FF;
+    background: #9002ff;
 
     &.cancel {
       left: 45.625vw;
-      background: #C39B44;
+      background: #c39b44;
     }
   }
 
@@ -583,6 +836,19 @@ export default defineComponent({
         ),
         #a7a7a7;
     }
+    &.add {
+      width: 8vw;
+      left: 14vw;
+      top: 9vw;
+      &.disabled {
+        background: linear-gradient(
+            180deg,
+            rgba(0, 0, 0, 0.25) 0%,
+            rgba(255, 255, 255, 0) 100%
+          ),
+          #a7a7a7;
+      }
+    }
   }
 
   &.both {
@@ -595,6 +861,19 @@ export default defineComponent({
           rgba(255, 255, 255, 0) 100%
         ),
         #a7a7a7;
+    }
+    &.add {
+      width: 8vw;
+      left: 23vw;
+      top: 9vw;
+      &.disabled {
+        background: linear-gradient(
+            180deg,
+            rgba(0, 0, 0, 0.25) 0%,
+            rgba(255, 255, 255, 0) 100%
+          ),
+          #a7a7a7;
+      }
     }
   }
 
@@ -637,10 +916,11 @@ export default defineComponent({
           rgba(255, 255, 255, 0) 100%
         ),
         #a7a7a7;
+      cursor: wait;
     }
   }
 
-  &.inaccessible{
+  &.inaccessible {
     width: 11.615vw;
     top: 30vw;
     left: 20.4vw;
@@ -656,7 +936,7 @@ export default defineComponent({
     border-radius: 2vw;
   }
 
-  &.info{
+  &.info {
     width: 11.615vw;
     top: 30vw;
     left: 3.5vw;
@@ -666,16 +946,16 @@ export default defineComponent({
         rgba(0, 0, 0, 0.25) 0%,
         rgba(255, 255, 255, 0) 100%
       ),
-      #2F103E;
+      #2f103e;
     background-blend-mode: soft-light, normal;
     border-radius: 2vw;
   }
 
-  &.back{
+  &.back {
     width: 11.615vw;
     top: 30vw;
     left: 4vw;
-    background: #1B83E2;
+    background: #1b83e2;
   }
 }
 
@@ -737,10 +1017,10 @@ export default defineComponent({
     color: rgba(26, 26, 26, 0.6);
 
     &.url {
-    text-align: center;
-    left: 12.5vw;
-    top: 6vw;
-    width: 19.5vw;
+      text-align: center;
+      left: 12.5vw;
+      top: 4vw;
+      width: 19.5vw;
     }
 
     &.name {
@@ -753,18 +1033,23 @@ export default defineComponent({
 
     &.set-price {
       height: 3vw;
-      width: 5vw;
+      width: 11vw;
       top: 30vw;
     }
 
     &.prereq {
-      top: 6vw;
-      height: 6vw;
+      top: 7vw;
+      height: 4vw;
     }
 
     &.desc {
-      top: 15vw;
+      text-align: start;
+      top: 13vw;
       height: 12vw;
+
+      &.no-prerequisite {
+        top: 7vw;
+      }
     }
   }
 }

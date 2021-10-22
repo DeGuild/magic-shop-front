@@ -256,7 +256,7 @@ export default {
           store.dispatch('User/setOwner', ownership);
           store.dispatch(
             'User/setDialog',
-            'Please wait and I will show you what we have got!',
+            'Please wait and I will show you what we have gotten!',
           );
           store.dispatch('User/setFetching', true);
 
