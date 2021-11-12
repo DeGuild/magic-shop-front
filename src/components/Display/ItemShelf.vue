@@ -209,8 +209,8 @@ import { useStore } from 'vuex';
 const Web3 = require('web3');
 
 const shopAddress = '0x1B362371f11cAA26B1A993f7Ffd711c0B9966f70';
-const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/IMagicScrolls.sol/IMagicScrolls.json').abi;
-const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/ISkillCertificate.sol/ISkillCertificate.json').abi;
+const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/V1/IMagicScrolls.sol/IMagicScrolls.json').abi;
+const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/V1/ISkillCertificate.sol/ISkillCertificate.json').abi;
 const noUrl = require('@/assets/no-url.jpg');
 
 export default defineComponent({
@@ -235,6 +235,7 @@ export default defineComponent({
       addPrice: null,
       addHasPrereq: false,
       addPrereq: null,
+      addPrereqId: null,
       addDesc: null,
       addHasLesson: false,
       buying: false,
@@ -524,16 +525,14 @@ export default defineComponent({
     }
     function cancelAdd() {
       if (!state.adding) {
-        store.dispatch(
-          'User/setDialog',
-          'Cancelled! No scroll will be added!',
-        );
+        store.dispatch('User/setDialog', 'Cancelled! No scroll will be added!');
       }
       state.addURL = null;
       state.addName = null;
       state.addID = null;
       state.addPrice = null;
       state.addPrereq = null;
+      state.addPrereqId = null;
       state.addDesc = null;
       state.addScroll = false;
       state.nextPage = false;
@@ -561,15 +560,13 @@ export default defineComponent({
         ? state.addPrereq
         : '0x0000000000000000000000000000000000000000';
       const price = web3.utils.toWei(state.addPrice, 'ether');
-      const hasPrerequisite = state.addHasPrereq;
-      const hasLesson = state.addHasLesson;
 
       const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
       const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
 
       try {
         const caller = await magicShop.methods
-          .addScroll(preRequisite, hasLesson, hasPrerequisite, price)
+          .addScroll(state.addPrereqId, preRequisite, state.addHasLesson, state.addHasPrereq, price)
           .send({ from: realAddress });
         const requestOptions = {
           method: 'POST',
@@ -686,6 +683,7 @@ export default defineComponent({
   width: 7.5vw;
   height: 7.5vw;
   position: absolute;
+  background: url('../../assets/Spinner-1s-200px.svg');
 
   &.display {
     position: static;
@@ -715,7 +713,7 @@ export default defineComponent({
   &.frame {
     width: 8.542vw;
     height: 8.542vw;
-    background: url('../../assets/itemFrame.png');
+    background: url('../../assets/itemFrame_new.png');
     background-size: cover;
   }
   &.item-box {

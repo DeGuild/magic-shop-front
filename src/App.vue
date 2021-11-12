@@ -27,7 +27,7 @@
   margin-top: 60px;
 }
 body {
-  background-image: url('assets/magic-wood-bg.png');
+  background-image: url('assets/magic-wood-bg.jpeg');
   background-size: cover;
   background-repeat: no-repeat;
   background-attachment: fixed;

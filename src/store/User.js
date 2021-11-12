@@ -10,6 +10,7 @@ export const UserModule = {
     scrollToFetch: null,
     fetching: false,
     dialog: "Welcome to Mona's shop",
+    dgcBalance: 0,
   },
   mutations: {
     SET_USER(state, user) {
@@ -36,6 +37,9 @@ export const UserModule = {
     SET_FETCHING(state, bool) {
       state.fetching = bool;
     },
+    SET_DGC(state, coins) {
+      state.dgcBalance = coins;
+    },
   },
   actions: {
     reset({ commit }) {
@@ -47,6 +51,7 @@ export const UserModule = {
       commit('SET_SCROLL_TO_FETCH', null);
       commit('SET_FETCHING', false);
       commit('SET_DIALOG', "Welcome to Mona's shop");
+      commit('SET_DGC', 0);
     },
     setUser({ commit }, user) {
       commit('SET_USER', user);
@@ -71,6 +76,9 @@ export const UserModule = {
     },
     setMagicScrollToFetch({ commit }, scroll) {
       commit('SET_SCROLL_TO_FETCH', scroll);
+    },
+    setDeguildCoin({ commit }, balance) {
+      commit('SET_SCROLL_TO_FETCH', balance);
     },
   },
   modules: {},
