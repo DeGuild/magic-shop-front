@@ -11,7 +11,7 @@
 /* eslint-disable no-await-in-loop */
 
 import { useStore } from 'vuex';
-// import { useRoute } from 'vue-router';
+import { useRoute } from 'vue-router';
 
 import { reactive, onBeforeMount, computed } from 'vue';
 
@@ -32,7 +32,7 @@ export default {
   name: 'ConnectWallet',
   setup() {
     const store = useStore();
-    // const route = useRoute();
+    const route = useRoute();
 
     const user = computed(() => store.state.User.user);
 
@@ -273,10 +273,7 @@ export default {
             'User/setUser',
             web3.utils.toChecksumAddress(accounts.result[0]),
           );
-          store.dispatch(
-            'User/setDeguildCoin',
-            balance,
-          );
+          store.dispatch('User/setDeguildCoin', balance);
           store.dispatch('User/setOwner', ownership);
           store.dispatch(
             'User/setDialog',
@@ -320,10 +317,11 @@ export default {
 
           return true;
         } catch (error) {
-          console.log(error);
+          // console.log(error);
           state.primary = 'ERROR!';
-          // route.push('/no-provider');
         }
+      } else {
+        route.push('/no-provider');
       }
       return false;
     }
