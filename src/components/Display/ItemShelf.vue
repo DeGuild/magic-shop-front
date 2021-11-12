@@ -1,5 +1,5 @@
 <template>
-  <div class="selection">
+  <div class="selection" v-bind:class="{ owner: !owner }">
     <div class="background"></div>
     <div v-for="imageIndex in 8" :key="imageIndex">
       <div
@@ -7,24 +7,35 @@
         :style="state.stylesFrame[imageIndex]"
       ></div>
       <div
-        class="half-circle-spinner"
-        :style="state.styles[imageIndex]"
-        v-if="state.loading"
-      >
-        <div class="half-circle-spinner circle circle-1"></div>
-        <div class="half-circle-spinner circle circle-2"></div>
-      </div>
-      <div
         class="image"
         :style="state.styles[imageIndex]"
-        v-if="state.images[imageIndex + state.pageIdx * 8 - 1]"
+        v-if="imageIndex - 1 + state.pageIdx * 8 < state.images.length"
+        v-show="!state.loading"
       >
         <img
-          class="image display click"
+          class="image display"
           :style="state.styles[imageIndex]"
           :src="state.images[imageIndex + state.pageIdx * 8 - 1].url"
-          v-on:click="choosing(imageIndex + state.pageIdx * 8 - 1)"
         />
+      </div>
+      <div
+        class="background frame click"
+        :style="state.stylesFrame[imageIndex]"
+        v-if="imageIndex - 1 + state.pageIdx * 8 < state.images.length"
+        v-on:click="choosing(imageIndex - 1 + state.pageIdx * 8)"
+      ></div>
+      <div v-if="state.loading">
+        <div class="image no-bg" :style="state.styles[imageIndex]">
+          <img
+            class="image display no-bg"
+            :style="state.styles[imageIndex]"
+            src="@/assets/Spinner-1s-200px.svg"
+          />
+        </div>
+        <div
+          class="background frame"
+          :style="state.stylesFrame[imageIndex]"
+        ></div>
       </div>
     </div>
     <button
@@ -172,7 +183,13 @@
       <input
         class="text course prereq"
         v-model="state.addPrereq"
-        placeholder="Course Prerequisite"
+        placeholder="Address"
+        v-show="state.addHasPrereq"
+      />
+      <input
+        class="text course prereqId"
+        v-model="state.addPrereqId"
+        placeholder="Id"
         v-show="state.addHasPrereq"
       />
       <textarea
@@ -208,9 +225,9 @@ import { useStore } from 'vuex';
 
 const Web3 = require('web3');
 
-const shopAddress = '0x1B362371f11cAA26B1A993f7Ffd711c0B9966f70';
-const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/V1/IMagicScrolls.sol/IMagicScrolls.json').abi;
-const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/V1/ISkillCertificate.sol/ISkillCertificate.json').abi;
+const shopAddress = '0xFA0Db8E0f8138A1675507113392839576eD3052c';
+const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/V2/IMagicScrolls+.sol/IMagicScrollsPlus.json').abi;
+const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/V2/ISkillCertificate+.sol/ISkillCertificatePlus.json').abi;
 const noUrl = require('@/assets/no-url.jpg');
 
 export default defineComponent({
@@ -353,12 +370,14 @@ export default defineComponent({
      * @param {address} address The address of any contract using the interface given
      * @return {string} name of the contract.
      */
-    async function getTokenType(address) {
+    async function getTokenType(address, prerequisiteId) {
       const certificateManager = new web3.eth.Contract(
         skillCertificateABI,
         address,
       );
-      const caller = await certificateManager.methods.typeAccepted().call();
+      const caller = await certificateManager.methods
+        .typeAccepted(prerequisiteId)
+        .call();
       return caller;
     }
 
@@ -383,7 +402,31 @@ export default defineComponent({
         return {};
       }
     }
+    /**
+     * Returns the url of the certificate address
+     *
+     * @param {address} address The certificate's address
+     * @return {string} certificate's url.
+     */
+    async function getTitle(address, tokenType) {
+      const imageUrl = await fetch(
+        `https://us-central1-deguild-2021.cloudfunctions.net/app/readCertificate/${address}/${tokenType}`,
+        { mode: 'cors' },
+      );
 
+      const dataUrl = await imageUrl.json();
+      // console.log(dataUrl.url);
+      return dataUrl.title;
+    }
+
+    async function getManagerName(address) {
+      const certificateManager = new web3.eth.Contract(
+        skillCertificateABI,
+        address,
+      );
+      const caller = await certificateManager.methods.name().call();
+      return caller;
+    }
     /**
      * Returns name of the address.
      *
@@ -419,9 +462,13 @@ export default defineComponent({
         store.dispatch('User/setDialog', 'Would you like to buy more?');
       } else {
         const prerequisite = await getName(state.imageSelected.prerequisite);
+        const prerequisiteTitle = await getTitle(
+          state.imageSelected.prerequisite,
+          state.imageSelected.prerequisiteId,
+        );
         store.dispatch(
           'User/setDialog',
-          `You need to earn ${prerequisite} certificate first!`,
+          `You need to earn ${prerequisiteTitle} certificate by ${prerequisite} first!`,
         );
       }
     }
@@ -433,10 +480,11 @@ export default defineComponent({
      * @return {bool} ownership.
      */
     async function moreInfo() {
-      const { prerequisite } = state.imageSelected;
+      const { prerequisite, prerequisiteId } = state.imageSelected;
       const confirm = await isShopOwnPrerequisite(prerequisite);
-      const type = await getTokenType(prerequisite);
-      // console.log(confirm, type, prerequisite);
+      const type = await getTokenType(prerequisite, prerequisiteId);
+      // console.log(state.imageSelected);
+      console.log(confirm, type, prerequisite);
       if (confirm) {
         await choosing(type);
         store.dispatch(
@@ -444,10 +492,9 @@ export default defineComponent({
           `Please earn the certificate of this scroll, ${state.images[type].name}.`,
         );
       } else {
-        store.dispatch(
-          'User/setDialog',
-          `You are not verified by ${prerequisite}`,
-        );
+        const title = await getTitle(prerequisite, prerequisiteId);
+        const name = await getManagerName(prerequisite, prerequisiteId);
+        store.dispatch('User/setDialog', `${title} by ${name} is required`);
       }
     }
 
@@ -485,10 +532,7 @@ export default defineComponent({
         state.primary = 'Buy';
         state.buying = false;
 
-        store.dispatch(
-          'User/setDialog',
-          'Transaction rejected! Have you changed your mind?',
-        );
+        store.dispatch('User/setDialog', 'Transaction rejected!');
 
         return false;
       }
@@ -519,9 +563,13 @@ export default defineComponent({
     }
     function showNext() {
       state.pageIdx += 1;
+      store.dispatch('User/setFetching', true);
+      setTimeout(() => store.dispatch('User/setFetching', false), 100);
     }
     function showPrevious() {
       state.pageIdx -= 1;
+      store.dispatch('User/setFetching', true);
+      setTimeout(() => store.dispatch('User/setFetching', false), 100);
     }
     function cancelAdd() {
       if (!state.adding) {
@@ -566,7 +614,13 @@ export default defineComponent({
 
       try {
         const caller = await magicShop.methods
-          .addScroll(state.addPrereqId, preRequisite, state.addHasLesson, state.addHasPrereq, price)
+          .addScroll(
+            state.addPrereqId,
+            preRequisite,
+            state.addHasLesson,
+            state.addHasPrereq,
+            price,
+          )
           .send({ from: realAddress });
         const requestOptions = {
           method: 'POST',
@@ -678,22 +732,20 @@ export default defineComponent({
     top: 0vw;
     left: -3vw;
   }
+  &.owner {
+    top: 0vw;
+  }
 }
 .image {
   width: 7.5vw;
   height: 7.5vw;
   position: absolute;
-  background: url('../../assets/Spinner-1s-200px.svg');
-
+  background: url('../../assets/Spinner-1s-200px.svg') no-repeat center;
+  &.no-bg {
+    background: unset;
+  }
   &.display {
     position: static;
-  }
-
-  &.click {
-    cursor: pointer;
-    &:hover {
-      opacity: 0.9;
-    }
   }
 
   &.selected {
@@ -710,6 +762,12 @@ export default defineComponent({
   background: #585858;
   left: 45.625vw;
   top: 24.115vw;
+  &.click {
+    cursor: pointer;
+    &:hover {
+      opacity: 0.9;
+    }
+  }
   &.frame {
     width: 8.542vw;
     height: 8.542vw;
@@ -1002,10 +1060,17 @@ export default defineComponent({
   &.description {
     position: absolute;
     width: 30.5vw;
-    height: 15vw;
+    height: 13vw;
     left: 2.3vw;
-    top: 14vw;
-    font-size: 1.1vw;
+    top: 13vw;
+    font-size: 1.2vw;
+    overflow: auto;
+    // text-overflow: ellipsis;
+    padding-top: 1vw;
+    padding-bottom: 1vw;
+    background: rgba(0, 12, 44, 0.39);
+    display: inline-block;
+    text-align: left;
   }
 
   &.course {
@@ -1038,6 +1103,15 @@ export default defineComponent({
     &.prereq {
       top: 7vw;
       height: 4vw;
+      width: 20vw;
+    }
+
+    &.prereqId {
+      top: 7vw;
+      height: 4vw;
+      left: 25vw;
+
+      width: 7vw;
     }
 
     &.desc {
@@ -1048,43 +1122,6 @@ export default defineComponent({
       &.no-prerequisite {
         top: 7vw;
       }
-    }
-  }
-}
-.half-circle-spinner {
-  box-sizing: border-box;
-  width: 5vw;
-  height: 5vw;
-  top: 1.1vw;
-  left: 1.1vw;
-  border-radius: 100%;
-  position: absolute;
-
-  &.circle {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 100%;
-    border: calc(60px / 10) solid transparent;
-  }
-
-  &.circle.circle-1 {
-    border-top-color: #ff1d5e;
-    animation: half-circle-spinner-animation 1s infinite;
-  }
-
-  &.circle.circle-2 {
-    border-bottom-color: #ff1d5e;
-    animation: half-circle-spinner-animation 1s infinite alternate;
-  }
-
-  @keyframes half-circle-spinner-animation {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
     }
   }
 }

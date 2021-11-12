@@ -155,6 +155,7 @@ export default {
         const caller = await deguildCoin.methods
           .allowance(realAddress, shopAddress)
           .call();
+        // console.log(caller);
         return caller <= balance && caller > 0;
       } catch (error) {
         return false;
@@ -235,10 +236,11 @@ export default {
           description: data.description,
           purchasable,
           price: web3.utils.fromWei(onChain[1], 'ether'),
-          prerequisite: onChain[2],
-          hasLesson: onChain[3],
-          hasPrerequisite: onChain[4],
-          available: onChain[5],
+          prerequisiteId: onChain[2],
+          prerequisite: onChain[3],
+          hasLesson: onChain[4],
+          hasPrerequisite: onChain[5],
+          available: onChain[6],
         };
         return token;
       }

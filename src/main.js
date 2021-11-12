@@ -1,13 +1,18 @@
 import { createApp } from 'vue';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
-  faUserSecret, faPhone, faCoffee, faSpinner,
+  faUserSecret,
+  faPhone,
+  faCoffee,
+  faSpinner,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import '@fontsource/poppins';
 import '@fontsource/secular-one';
 import 'viewerjs/dist/viewer.css';
 import VueSocialSharing from 'vue-social-sharing';
+import { createHead } from '@vueuse/head';
+import '@/plugins/firebase';
 
 import App from './App.vue';
 import router from './router';
@@ -17,8 +22,10 @@ library.add(faUserSecret);
 library.add(faPhone);
 library.add(faCoffee);
 library.add(faSpinner);
+const head = createHead();
 
 createApp(App)
+  .use(head)
   .use(store)
   .use(router)
   .use(VueSocialSharing)
