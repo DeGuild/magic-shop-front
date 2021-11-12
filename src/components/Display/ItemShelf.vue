@@ -140,6 +140,36 @@
       <div class="image selected">
         <img class="image selected display" :src="previewUrl" />
       </div>
+      <div>
+        <div class="custom-file-upload">
+          <label for="file-upload" class="custom-file-upload button">
+            <i class="fas fa-paperclip"></i>
+            <span class="custom-file-upload text">{{ state.fileName }}</span>
+          </label>
+          <span>
+            <button class="btn" @click="onUpload()" v-if="state.zipData">
+              Upload
+            </button>
+          </span>
+          <span class="progress" v-if="state.uploading">
+            <span class="progress text">
+              Progress: {{ state.uploadValue.toFixed() + '%' }}
+            </span>
+            <progress
+              class="progress bar"
+              :value="state.uploadValue"
+              max="100"
+            ></progress>
+          </span>
+        </div>
+
+        <input
+          id="file-upload"
+          @change="previewZipName($event)"
+          type="file"
+          accept=".zip"
+        />
+      </div>
       <input
         class="text course url"
         v-model="state.addURL"

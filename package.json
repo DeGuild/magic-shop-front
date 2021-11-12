@@ -16,6 +16,7 @@
     "@vueuse/head": "^0.6.0",
     "add": "^2.0.6",
     "core-js": "^3.6.5",
+    "dotenv": "^10.0.0",
     "firebase": "^9.4.1",
     "v-viewer": "^3.0.10",
     "viewerjs": "^1.10.1",

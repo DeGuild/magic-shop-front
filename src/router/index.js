@@ -18,6 +18,11 @@ const routes = [
       window.location.href = 'https://metamask.io/download';
     },
   },
+  {
+    path: '/test',
+    name: 'Sandbox',
+    component: () => import('@/views/_Sandbox.vue'),
+  },
 ];
 
 const router = createRouter({
