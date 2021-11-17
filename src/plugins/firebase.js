@@ -18,7 +18,6 @@ const firebaseConfig = {
   measurementId: process.env.VUE_APP_MEASUREMENTID,
 };
 // Initialize Firebase
-
 const app = initializeApp(firebaseConfig);
 // for accessing firestore database
 export default app;

@@ -491,14 +491,13 @@ export default defineComponent({
       if (state.imageSelected.purchasable) {
         store.dispatch('User/setDialog', 'Would you like to buy more?');
       } else {
-        const prerequisite = await getName(state.imageSelected.prerequisite);
         const prerequisiteTitle = await getTitle(
           state.imageSelected.prerequisite,
           state.imageSelected.prerequisiteId,
         );
         store.dispatch(
           'User/setDialog',
-          `You need to earn ${prerequisiteTitle} certificate by ${prerequisite} first!`,
+          `You need to earn ${prerequisiteTitle} certificate first!`,
         );
       }
     }
