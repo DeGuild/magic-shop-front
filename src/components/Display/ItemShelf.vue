@@ -688,6 +688,17 @@ export default defineComponent({
                 try {
                   console.log('File available at', downloadURL);
                   scrollToAdd.picture = downloadURL;
+                  const transaction = await magicShop.methods
+                    .addScroll(
+                      scrollToAdd.prereqId ? scrollToAdd.prereqId : '0',
+                      preRequisite,
+                      scrollToAdd.hasLesson,
+                      scrollToAdd.hasPrereq,
+                      price,
+                    )
+                    .send({ from: realAddress });
+
+                  console.log(transaction);
 
                   const requestOptions = {
                     method: 'POST',
@@ -709,18 +720,6 @@ export default defineComponent({
                     requestOptions,
                   );
 
-                  const transaction = await magicShop.methods
-                    .addScroll(
-                      scrollToAdd.prereqId,
-                      preRequisite,
-                      scrollToAdd.hasLesson,
-                      scrollToAdd.hasPrereq,
-                      price,
-                    )
-                    .send({ from: realAddress });
-
-                  console.log(transaction);
-
                   cancelAdd();
                   store.dispatch(
                     'User/setDialog',
@@ -729,12 +728,13 @@ export default defineComponent({
                   scrollToAdd.addButton = 'Add';
                   state.adding = false;
 
-                  store.dispatch('User/setRegistration', true);
                   store.dispatch(
                     'User/setDialog',
                     'Alright, we will change that for you!',
                   );
                   store.dispatch('User/setFetching', false);
+                  window.location.reload();
+
                   return transaction;
                 } catch (error) {
                   scrollToAdd.addButton = 'Add';
