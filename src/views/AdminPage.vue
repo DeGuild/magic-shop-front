@@ -1,12 +1,7 @@
 <template>
   <connect-wallet />
   <div v-if="user !== null">
-    <div v-if="wallet === true">
-    </div>
-    <div v-if="wallet !== true">
-      <approve-modal></approve-modal>
-      <approve-wallet></approve-wallet>
-    </div>
+    <admin-panel></admin-panel>
   </div>
   <no-wallet v-if="user === null" />
 </template>
@@ -15,9 +10,8 @@
 import { useStore } from 'vuex';
 import { computed } from 'vue';
 import ConnectWallet from '../components/Buttons/ConnectWallet.vue';
-import ApproveWallet from '../components/Buttons/ApproveWallet.vue';
 import NoWallet from '../components/General/NoWallet.vue';
-import ApproveModal from '../components/General/Approve.vue';
+import AdminPanel from '../components/General/AdminPanel.vue';
 // @ is an alias to /src
 
 export default {
@@ -25,8 +19,7 @@ export default {
   components: {
     ConnectWallet,
     NoWallet,
-    ApproveModal,
-    ApproveWallet,
+    AdminPanel,
   },
   setup() {
     const store = useStore();

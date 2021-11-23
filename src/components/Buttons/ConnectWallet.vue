@@ -13,7 +13,7 @@
 /* eslint-disable no-await-in-loop */
 
 import { useStore } from 'vuex';
-import { useRoute } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 
 import { reactive, onBeforeMount, computed } from 'vue';
 
@@ -36,6 +36,7 @@ export default {
   setup() {
     const store = useStore();
     const route = useRoute();
+    const router = useRouter();
 
     const user = computed(() => store.state.User.user);
     function shortenedAddress(address) {
@@ -278,6 +279,10 @@ export default {
           const approve = await hasApproval(accounts[0]);
           let toAdd = [];
 
+          if (route.name === 'admin' && !ownership) {
+            router.push('/');
+          }
+
           store.dispatch(
             'User/setUser',
             web3.utils.toChecksumAddress(accounts[0]),
@@ -329,7 +334,7 @@ export default {
           console.log(error);
         }
       } else {
-        route.push('/no-provider');
+        router.push('/no-provider');
       }
       return false;
     }
