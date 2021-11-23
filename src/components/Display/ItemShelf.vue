@@ -134,47 +134,22 @@
       </div>
     </div>
   </div>
+
+  <!-- For adding -->
   <div class="selection item" v-if="state.addScroll">
     <div class="background item-box">
       <div class="background current-item-frame" />
       <div class="image selected">
         <img class="image selected display" :src="previewUrl" />
       </div>
-      <div>
+      <div class="upload-pos">
         <div class="custom-file-upload">
-          <label for="file-upload" class="custom-file-upload button">
+          <label for="scroll-pic-upload" class="custom-file-upload button">
             <i class="fas fa-paperclip"></i>
-            <span class="custom-file-upload text">{{ state.fileName }}</span>
+            <span class="upload">{{ scrollToAdd.fileName }}</span>
           </label>
-          <span>
-            <button class="btn" @click="onUpload()" v-if="state.zipData">
-              Upload
-            </button>
-          </span>
-          <span class="progress" v-if="state.uploading">
-            <span class="progress text">
-              Progress: {{ state.uploadValue.toFixed() + '%' }}
-            </span>
-            <progress
-              class="progress bar"
-              :value="state.uploadValue"
-              max="100"
-            ></progress>
-          </span>
         </div>
-
-        <input
-          id="file-upload"
-          @change="previewZipName($event)"
-          type="file"
-          accept=".zip"
-        />
       </div>
-      <input
-        class="text course url"
-        v-model="state.addURL"
-        placeholder="Picture URL"
-      />
       <input
         class="text course name"
         v-model="state.addName"
@@ -244,6 +219,13 @@
       ></button>
     </div>
   </div>
+
+  <input
+    id="scroll-pic-upload"
+    @change="previewZipName($event)"
+    type="file"
+    accept="image/jpeg"
+  />
 </template>
 
 <script>
@@ -255,10 +237,13 @@ import { useStore } from 'vuex';
 
 const Web3 = require('web3');
 
-const shopAddress = '0xFA0Db8E0f8138A1675507113392839576eD3052c';
+// const shopAddress = '0xFA0Db8E0f8138A1675507113392839576eD3052c';
 const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/V2/IMagicScrolls+.sol/IMagicScrollsPlus.json').abi;
 const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/V2/ISkillCertificate+.sol/ISkillCertificatePlus.json').abi;
 const noUrl = require('@/assets/no-url.jpg');
+require('dotenv').config();
+
+const shopAddress = process.env.VUE_APP_SHOP_ADDRESS;
 
 export default defineComponent({
   name: 'ItemShelf',
@@ -363,7 +348,19 @@ export default defineComponent({
         },
       ],
     });
-
+    const scrollToAdd = reactive({
+      fileData: null,
+      fileName: 'Click to upload image',
+      URL: null,
+      Name: null,
+      ID: null,
+      Price: null,
+      HasPrereq: false,
+      Prereq: null,
+      PrereqId: null,
+      Desc: null,
+      HasLesson: false,
+    });
     function validURL(str) {
       const pattern = new RegExp(
         '^(https?:\\/\\/)?' // protocol
@@ -747,12 +744,59 @@ export default defineComponent({
       showPrevious,
       owner,
       previewUrl,
+      scrollToAdd,
     };
   },
 });
 </script>
 
 <style scoped lang="scss">
+input[type='file'] {
+  display: none;
+}
+.fas {
+  color: rgb(92, 92, 92);
+  margin-right: 1vw;
+}
+.upload-pos {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  left: 5vw;
+  top: 5vw;
+  position: relative;
+}
+.upload {
+  color: white;
+}
+.custom-file-upload {
+  position: relative;
+  width: 15vw;
+  height: 2vw;
+  margin-top: 1vw;
+  padding-bottom: 1vw;
+  padding-left: 1vw;
+  // background: red;
+
+  // display: flex;
+  // align-items: center;
+  // justify-content: center;
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 1vw;
+  color: #000000;
+  cursor: pointer;
+
+  &.button {
+    padding-bottom: 0vw;
+    padding: 0.5vw 0.5vw 0.5vw 0.5vw;
+
+    background: rgba(224, 224, 224, 0.6);
+    overflow: hidden;
+  }
+}
 .selection {
   top: 3.5vw;
   left: -2vw;

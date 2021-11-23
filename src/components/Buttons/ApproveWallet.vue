@@ -18,8 +18,10 @@ const Web3 = require('web3');
  * Using relative path, just clone the git beside this project directory and compile to run
  */
 // eslint-disable-next-line no-unused-vars
-const shopAddress = '0xFA0Db8E0f8138A1675507113392839576eD3052c';
-const dgcAddress = '0x4312D992940D0b110525f553160c9984b77D1EF4';
+require('dotenv').config();
+
+const shopAddress = process.env.VUE_APP_SHOP_ADDRESS;
+const dgcAddress = process.env.VUE_APP_DGC_ADDRESS;
 const dgcABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/Tokens/DeGuildCoinERC20.sol/DeGuildCoinERC20.json').abi;
 
 export default {

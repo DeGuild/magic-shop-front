@@ -27,6 +27,7 @@
     "vue3-carousel": "^0.1.27",
     "vuex": "^4.0.0-0",
     "web3": "^1.5.3",
+    "web3-token": "^0.1.32",
     "yarn": "^1.22.15"
   },
   "devDependencies": {

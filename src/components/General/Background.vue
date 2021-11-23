@@ -1,11 +1,10 @@
 <template>
-  <div class="shopfront"></div>
+  <div class="shopfront"><div class="npc"></div></div>
   <div class="dialog">
     <div class="dialog-text" v-bind:class="{ smaller: state.dialogStyle }">
       {{ state.dialog }}
     </div>
   </div>
-  <div class="npc"></div>
 </template>
 
 <script>
@@ -28,7 +27,7 @@ export default defineComponent({
 });
 </script>
 <style scoped lang="scss">
-.shopfront{
+.shopfront {
   position: absolute;
   width: 99.215vw;
   height: 19vw;
@@ -37,6 +36,8 @@ export default defineComponent({
 
   background: url('../../assets/magic-shop-bg.png');
   background-size: cover;
+  overflow: hidden;
+
 }
 .dialog {
   position: absolute;
@@ -71,10 +72,10 @@ export default defineComponent({
 }
 .npc {
   position: absolute;
-  width: 32vw;
-  height: 16.5vw;
+  width: 28vw;
+  height: 20vw;
   left: 0vw;
-  top: 2.45vw;
+  top: 0vw;
 
   background: url('../../assets/npc.png');
   background-size: cover;
