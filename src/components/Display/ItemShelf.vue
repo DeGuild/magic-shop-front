@@ -212,7 +212,7 @@
       <button class="Button back" @click="goBack">BACK</button>
       <button
         class="Button buy"
-        v-html="scrollToAdd.addScrollButton"
+        v-html="scrollToAdd.addButton"
         @click="addScroll"
         :class="{ disabled: scrollToAdd.adding }"
         :disabled="scrollToAdd.adding"
@@ -234,6 +234,13 @@
 
 import { defineComponent, reactive, computed } from 'vue';
 import { useStore } from 'vuex';
+import {
+  getStorage,
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+} from 'firebase/storage';
+import Web3Token from 'web3-token';
 
 const Web3 = require('web3');
 
@@ -342,7 +349,7 @@ export default defineComponent({
       imageData: null,
       fileName: 'Click to upload image',
       picture: noImg,
-      addHasPrereq: 'ADD',
+      addButton: 'ADD',
       hasPrereqButton: 'Require prerequisite',
       name: null,
       id: null,
@@ -562,13 +569,13 @@ export default defineComponent({
       );
     }
     function selectExam() {
-      state.addHasLesson = false;
+      scrollToAdd.hasLesson = false;
     }
     function selectBoth() {
-      state.addHasLesson = true;
+      scrollToAdd.hasLesson = true;
     }
     function selectHasPrereq() {
-      state.addHasPrereq = !state.addHasPrereq;
+      scrollToAdd.hasPrereq = !scrollToAdd.hasPrereq;
     }
     function goNext() {
       state.nextPage = true;
@@ -601,78 +608,119 @@ export default defineComponent({
       state.nextPage = false;
     }
 
-    /**
-     * Returns whether user is the owner of this shop
-     *
-     * @param {address} address ethereum address
-     * @return {bool} ownership.
-     */
     async function addScroll() {
-      state.primary2 = "<i class='fas fa-spinner fa-spin'></i>";
+      store.dispatch('User/setFetching', true);
+      scrollToAdd.addButton = "<i class='fas fa-spinner fa-spin'></i>";
       state.adding = true;
-      /**
-       * TODO: Validate data properly before sending to rinkeby
-       * * My suggestion is that we should use vee-validate later
-       */
+
       store.dispatch(
         'User/setDialog',
         'We are processing your transaction! It will take a while.',
       );
-
-      const preRequisite = web3.utils.isAddress(state.addPrereq)
-        ? state.addPrereq
-        : '0x0000000000000000000000000000000000000000';
-      const price = web3.utils.toWei(state.addPrice, 'ether');
-
-      const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
-      const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
-
       try {
-        const caller = await magicShop.methods
-          .addScroll(
-            state.addPrereqId,
-            preRequisite,
-            state.addHasLesson,
-            state.addHasPrereq,
-            price,
-          )
-          .send({ from: realAddress });
-        const requestOptions = {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            url: state.addURL,
-            address: shopAddress,
-            tokenId: caller.events.ScrollAdded.returnValues.scrollID,
-            name: state.addName,
-            courseId: state.addID,
-            description: state.addDesc,
-          }),
-        };
-        await fetch(
-          'https://us-central1-deguild-2021.cloudfunctions.net/shop/addMagicScroll',
-          requestOptions,
+        const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
+        const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
+        const currentType = await magicShop.methods.numberOfScrollTypes().call();
+        // generating a token with 1 day of expiration time
+        const token = await Web3Token.sign(
+          (msg) => web3.eth.personal.sign(msg, realAddress),
+          '1d',
         );
+        const storage = getStorage();
+        const storageRef = ref(storage, `images/${shopAddress}/${currentType}`);
 
-        cancelAdd();
-        store.dispatch(
-          'User/setDialog',
-          'Transaction completed! I will tell the customers about it!',
+        const uploadTask = uploadBytesResumable(
+          storageRef,
+          scrollToAdd.imageData,
         );
-        state.primary2 = 'Add';
-        state.adding = false;
+        // Register three observers:
+        // 1. 'state_changed' observer, called any time the state changes
+        // 2. Error observer, called on failure
+        // 3. Completion observer, called on successful completion
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+          // Observe state change events such as progress, pause, and resume
+          // console.log(`Upload is ${progress}% done`);
+          // eslint-disable-next-line default-case
+            switch (snapshot.state) {
+              case 'paused':
+              // console.log('Upload is paused');
+                break;
+              case 'running':
+              // console.log('Upload is running');
+                break;
+            }
+          },
+          (error) => {
+          // Handle unsuccessful uploads
+            console.error(error.message);
+            store.dispatch('User/setFetching', false);
+          },
+          async () => {
+            getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
+            // console.log('File available at', downloadURL);
+              scrollToAdd.picture = downloadURL;
+              const preRequisite = web3.utils.isAddress(scrollToAdd.prereq)
+                ? scrollToAdd.prereq
+                : '0x0000000000000000000000000000000000000000';
+              const price = web3.utils.toWei(scrollToAdd.price, 'ether');
 
-        return caller;
+              const caller = await magicShop.methods
+                .addScroll(
+                  scrollToAdd.prereqId,
+                  preRequisite,
+                  scrollToAdd.hasLesson,
+                  scrollToAdd.hasPrereq,
+                  price,
+                )
+                .send({ from: realAddress });
+              const requestOptions = {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  url: downloadURL,
+                  address: shopAddress,
+                  tokenId: caller.events.ScrollAdded.returnValues.scrollID,
+                  name: scrollToAdd.name,
+                  courseId: scrollToAdd.id,
+                  description: scrollToAdd.desc,
+                }),
+              };
+              await fetch(
+                'https://us-central1-deguild-2021.cloudfunctions.net/shop/addMagicScroll',
+                requestOptions,
+              );
+
+              cancelAdd();
+              store.dispatch(
+                'User/setDialog',
+                'Transaction completed! I will tell the customers about it!',
+              );
+              scrollToAdd.addButton = 'Add';
+              state.adding = false;
+
+              store.dispatch('User/setRegistration', true);
+              store.dispatch(
+                'User/setDialog',
+                'Alright, we will change that for you!',
+              );
+              store.dispatch('User/setFetching', false);
+              return caller;
+            });
+          },
+        );
       } catch (error) {
-        state.primary2 = 'Add';
+        scrollToAdd.addButton = 'Add';
         state.adding = false;
+        store.dispatch('User/setFetching', false);
 
         store.dispatch(
           'User/setDialog',
           'Transaction rejected! Have you changed your mind?',
         );
-        return false;
       }
+      return false;
     }
 
     function showAll() {
