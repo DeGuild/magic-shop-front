@@ -140,41 +140,41 @@
     <div class="background item-box">
       <div class="background current-item-frame" />
       <div class="image selected">
-        <img class="image selected display" :src="previewUrl" />
+        <img class="image selected display" :src="scrollToAdd.picture" />
       </div>
       <div class="upload-pos">
         <div class="custom-file-upload">
           <label for="scroll-pic-upload" class="custom-file-upload button">
             <i class="fas fa-paperclip"></i>
-            <span class="upload">{{ scrollToAdd.fileName }}</span>
+            <span class="upload-preview">{{ scrollToAdd.fileName }}</span>
           </label>
         </div>
       </div>
       <input
         class="text course name"
-        v-model="state.addName"
+        v-model="scrollToAdd.addName"
         placeholder="Course Name"
       />
       <input
         class="text course id"
-        v-model="state.addID"
+        v-model="scrollToAdd.addID"
         placeholder="Course ID"
       />
       <input
         class="text course set-price"
-        v-model="state.addPrice"
+        v-model="scrollToAdd.addPrice"
         placeholder="Price"
       />
       <button
         class="Button exam add"
-        :class="{ disabled: state.addHasLesson }"
+        :class="{ disabled: scrollToAdd.addHasLesson }"
         v-on:click="selectExam()"
       >
         Exam Only
       </button>
       <button
         class="Button both add"
-        :class="{ disabled: !state.addHasLesson }"
+        :class="{ disabled: !scrollToAdd.addHasLesson }"
         v-on:click="selectBoth()"
       >
         Both
@@ -187,42 +187,42 @@
     <div class="background item-box">
       <input
         class="text course prereq"
-        v-model="state.addPrereq"
+        v-model="scrollToAdd.addPrereq"
         placeholder="Address"
-        v-show="state.addHasPrereq"
+        v-show="scrollToAdd.addHasPrereq"
       />
       <input
         class="text course prereqId"
-        v-model="state.addPrereqId"
+        v-model="scrollToAdd.addPrereqId"
         placeholder="Id"
-        v-show="state.addHasPrereq"
+        v-show="scrollToAdd.addHasPrereq"
       />
       <textarea
         class="text course desc"
-        v-model="state.addDesc"
-        :class="{ 'no-prerequisite': !state.addHasPrereq }"
+        v-model="scrollToAdd.addDesc"
+        :class="{ 'no-prerequisite': !scrollToAdd.addHasPrereq }"
         placeholder="Course Description"
       ></textarea>
       <button
         class="Button hasPrereq"
         v-on:click="selectHasPrereq()"
-        v-html="state.primary3"
-        :class="{ disabled: !state.addHasPrereq }"
+        v-html="scrollToAdd.primary3"
+        :class="{ disabled: !scrollToAdd.addHasPrereq }"
       ></button>
       <button class="Button back" v-on:click="goBack">BACK</button>
       <button
         class="Button buy"
-        v-html="state.primary2"
+        v-html="scrollToAdd.primary2"
         v-on:click="addScroll"
-        :class="{ disabled: state.adding }"
-        :disabled="state.adding"
+        :class="{ disabled: scrollToAdd.adding }"
+        :disabled="scrollToAdd.adding"
       ></button>
     </div>
   </div>
 
   <input
     id="scroll-pic-upload"
-    @change="previewZipName($event)"
+    @change="previewName($event)"
     type="file"
     accept="image/jpeg"
   />
@@ -244,6 +244,7 @@ const noUrl = require('@/assets/no-url.jpg');
 require('dotenv').config();
 
 const shopAddress = process.env.VUE_APP_SHOP_ADDRESS;
+const noImg = require('@/assets/no-url.jpg');
 
 export default defineComponent({
   name: 'ItemShelf',
@@ -349,8 +350,9 @@ export default defineComponent({
       ],
     });
     const scrollToAdd = reactive({
-      fileData: null,
+      imageData: null,
       fileName: 'Click to upload image',
+      picture: noImg,
       URL: null,
       Name: null,
       ID: null,
@@ -361,20 +363,17 @@ export default defineComponent({
       Desc: null,
       HasLesson: false,
     });
-    function validURL(str) {
-      const pattern = new RegExp(
-        '^(https?:\\/\\/)?' // protocol
-          + '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' // domain name
-          + '((\\d{1,3}\\.){3}\\d{1,3}))' // OR ip (v4) address
-          + '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' // port and path
-          + '(\\?[;&a-z\\d%_.~+=-]*)?' // query string
-          + '(\\#[-a-z\\d_]*)?$',
-        'i',
-      ); // fragment locator
-      return !!pattern.test(str);
-    }
 
-    const previewUrl = computed(() => (validURL(state.addURL) ? state.addURL : noUrl));
+    function previewName(event) {
+      // console.log('File changed!');
+      const file = event.target.files[0];
+      console.log(file);
+      scrollToAdd.imageData = file;
+      scrollToAdd.fileName = file.name;
+
+      const previewing = URL.createObjectURL(event.target.files[0]);
+      scrollToAdd.picture = previewing;
+    }
 
     /**
      * Returns name of the address.
@@ -742,8 +741,8 @@ export default defineComponent({
       selectHasPrereq,
       showNext,
       showPrevious,
+      previewName,
       owner,
-      previewUrl,
       scrollToAdd,
     };
   },
@@ -767,12 +766,24 @@ input[type='file'] {
   top: 5vw;
   position: relative;
 }
-.upload {
+.upload-preview {
+  display: inline-block;
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 900;
+  font-size: 1vw;
+  white-space: nowrap;
+  top: 0.4vw;
+  position: relative;
   color: white;
+  width: 15vw;
+  height: 1.5vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .custom-file-upload {
   position: relative;
-  width: 15vw;
+  width: 20vw;
   height: 2vw;
   margin-top: 1vw;
   padding-bottom: 1vw;
