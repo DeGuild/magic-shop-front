@@ -38,7 +38,7 @@
         </div>
       </div>
 
-      <div class="btn download">Download CSV</div>
+      <div class="btn download" @click="getCSV()">Download CSV</div>
     </span>
     <span class="panel right">
       <div><h1 class="title text">Preview certificate</h1></div>
@@ -46,8 +46,8 @@
       <img src="@/assets/no-url.jpg" />
       <div class="preview" v-for="i in 4" :key="i">
         <div>
-          <span class="preview-text">{{i}}:</span
-          ><span class="preview-text data">{{i}}</span>
+          <span class="preview-text">{{ i }}:</span
+          ><span class="preview-text data">{{ i }}</span>
         </div>
       </div>
       <div class="upload-pos">
@@ -78,6 +78,8 @@ import { useStore } from 'vuex';
 import { reactive, computed } from 'vue';
 
 const Web3 = require('web3');
+const { parse } = require('json2csv');
+const csv = require('csvtojson');
 
 /**
  * Using relative path, just clone the git beside this project directory and compile to run
@@ -92,6 +94,58 @@ const dgcABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/cont
 export default {
   name: 'AdminPanel',
   setup() {
+    const obj = [
+      {
+        album: 'The White Stripes',
+        year: 1999,
+        US_peak_chart_post: '-',
+      },
+      {
+        album: 'De Stijl',
+        year: 2000,
+        US_peak_chart_post: '-',
+      },
+      {
+        album: 'White Blood Cells',
+        year: 2001,
+        US_peak_chart_post: 61,
+      },
+      {
+        album: 'Elephant',
+        year: 2003,
+        US_peak_chart_post: 6,
+      },
+      {
+        album: 'Get Behind Me Satan',
+        year: 2005,
+        US_peak_chart_post: 3,
+      },
+      {
+        album: 'Icky Thump',
+        year: 2007,
+        US_peak_chart_post: 2,
+      },
+      {
+        album: 'Under Great White Northern Lights',
+        year: 2010,
+        US_peak_chart_post: 11,
+      },
+      {
+        album: 'Live in Mississippi',
+        year: 2011,
+        US_peak_chart_post: '-',
+      },
+      {
+        album: 'Live at the Gold Dollar',
+        year: 2012,
+        US_peak_chart_post: '-',
+      },
+      {
+        album: 'Nine Miles from the White City',
+        year: 2013,
+        US_peak_chart_post: '-',
+      },
+    ];
     const store = useStore();
     // const route = useRoute();
 
@@ -150,10 +204,39 @@ export default {
       }
     }
 
+    async function getCSV() {
+      const fields = ['album', 'year', 'US_peak_chart_post'];
+      const opts = { fields };
+
+      try {
+        const csvText = parse(obj, opts);
+        console.log(csvText);
+        const element = document.createElement('a');
+        element.setAttribute('href', `data:text/plain;charset=utf-8,${encodeURIComponent(csvText)}`);
+        element.setAttribute('download', 'csvtest');
+
+        element.style.display = 'none';
+        document.body.appendChild(element);
+
+        element.click();
+
+        document.body.removeChild(element);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function getJSON(csvFilePath) {
+      const jsonArray = await csv().fromFile(csvFilePath);
+      console.log(jsonArray);
+    }
+
     return {
       state,
       user,
       approve,
+      getCSV,
+      getJSON,
     };
   },
 };

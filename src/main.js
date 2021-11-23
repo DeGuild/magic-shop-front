@@ -13,7 +13,6 @@ import 'viewerjs/dist/viewer.css';
 import VueSocialSharing from 'vue-social-sharing';
 import { createHead } from '@vueuse/head';
 import '@/plugins/firebase';
-
 import App from './App.vue';
 import router from './router';
 import store from './store';
