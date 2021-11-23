@@ -58,14 +58,14 @@
           </label>
         </div>
       </div>
-      <div class="btn upload">BATCH MINT</div>
+      <div class="btn upload" @click="getJSON()">BATCH MINT</div>
     </span>
   </div>
   <input
     id="scroll-pic-upload"
-    @change="previewName($event)"
+    @change="previewCSV($event)"
     type="file"
-    accept="image/jpeg"
+    accept="text/csv"
   />
 </template>
 
@@ -79,7 +79,6 @@ import { reactive, computed } from 'vue';
 
 const Web3 = require('web3');
 const { parse } = require('json2csv');
-const csv = require('csvtojson');
 
 /**
  * Using relative path, just clone the git beside this project directory and compile to run
@@ -155,6 +154,7 @@ export default {
       primary: 'APPROVE',
       network: '',
       magicScrollsData: [],
+      csvFile: null,
     });
     const web3 = new Web3(Web3.givenProvider || 'ws://localhost:8545');
 
@@ -212,7 +212,10 @@ export default {
         const csvText = parse(obj, opts);
         console.log(csvText);
         const element = document.createElement('a');
-        element.setAttribute('href', `data:text/plain;charset=utf-8,${encodeURIComponent(csvText)}`);
+        element.setAttribute(
+          'href',
+          `data:text/csv;charset=utf-8,${encodeURIComponent(csvText)}`,
+        );
         element.setAttribute('download', 'csvtest');
 
         element.style.display = 'none';
@@ -226,9 +229,105 @@ export default {
       }
     }
 
-    async function getJSON(csvFilePath) {
-      const jsonArray = await csv().fromFile(csvFilePath);
-      console.log(jsonArray);
+    function CSVToArray(strData, _strDelimiter) {
+      // Check to see if the delimiter is defined. If not,
+      // then default to comma.
+      const strDelimiter = _strDelimiter || ',';
+
+      // Create a regular expression to parse the CSV values.
+      const objPattern = new RegExp(
+        // Delimiters.
+        `(\\${strDelimiter}|\\r?\\n|\\r|^)`
+          // Quoted fields.
+          + '(?:"([^"]*(?:""[^"]*)*)"|'
+          // Standard fields.
+          + `([^"\\${strDelimiter}\\r\\n]*))`,
+        'gi',
+      );
+
+      // Create an array to hold our data. Give the array
+      // a default empty first row.
+      const arrData = [[]];
+
+      // Create an array to hold our individual pattern
+      // matching groups.
+      let arrMatches = null;
+
+      // Keep looping over the regular expression matches
+      // until we can no longer find a match.
+      // eslint-disable-next-line no-cond-assign
+      while ((arrMatches = objPattern.exec(strData))) {
+        // Get the delimiter that was found.
+        const strMatchedDelimiter = arrMatches[1];
+
+        // Check to see if the given delimiter has a length
+        // (is not the start of string) and if it matches
+        // field delimiter. If id does not, then we know
+        // that this delimiter is a row delimiter.
+        if (
+          strMatchedDelimiter.length
+          && strMatchedDelimiter !== strDelimiter
+        ) {
+          // Since we have reached a new row of data,
+          // add an empty row to our data array.
+          arrData.push([]);
+        }
+
+        // Now that we have our delimiter out of the way,
+        // let's check to see which kind of value we
+        // captured (quoted or unquoted).
+        let strMatchedValue;
+        if (arrMatches[2]) {
+          // We found a quoted value. When we capture
+          // this value, unescape any double quotes.
+          strMatchedValue = arrMatches[2].replace(new RegExp('""', 'g'), '"');
+        } else {
+          // We found a non-quoted value.
+          // eslint-disable-next-line prefer-destructuring
+          strMatchedValue = arrMatches[3];
+        }
+
+        // Now that we have our value string, let's add
+        // it to the data array.
+        arrData[arrData.length - 1].push(strMatchedValue);
+      }
+
+      // Return the parsed data.
+      return arrData;
+    }
+
+    async function getJSON() {
+      // console.log(jsonArray);
+      const fr = new FileReader();
+      fr.onload = () => {
+        console.log(fr.result);
+
+        try {
+          const csvArray = CSVToArray(fr.result);
+          console.log(csvArray);
+          const jsonObjHeader = csvArray.slice(0, 1);
+          const jsonObj = csvArray.slice(1).map((row) => {
+            const objForJSON = {};
+            for (let index = 0; index < jsonObjHeader.length; index += 1) {
+              objForJSON[jsonObjHeader[index]] = row[index];
+            }
+            return obj;
+          });
+          console.log(jsonObj);
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      fr.readAsText(state.csvFile);
+    }
+
+    function previewCSV(event) {
+      // console.log('File changed!');
+      const file = event.target.files[0];
+      console.log(file);
+      // state.picture = previewing;
+      state.csvFile = file;
     }
 
     return {
@@ -237,6 +336,7 @@ export default {
       approve,
       getCSV,
       getJSON,
+      previewCSV,
     };
   },
 };
