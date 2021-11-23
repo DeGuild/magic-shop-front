@@ -1,11 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import ConnectWallet from '../views/MagicShop.vue';
+import AdminPage from '../views/AdminPage.vue';
 
 const routes = [
   {
     path: '/',
     name: 'Home',
     component: ConnectWallet,
+  },
+  {
+    path: '/admin',
+    name: 'admin',
+    component: AdminPage,
   },
   {
     path: '/no-provider',

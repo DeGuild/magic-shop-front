@@ -1,6 +1,8 @@
 <template>
   <div v-if="!user">
-    <button class="btn" @click="ethEnabled" v-html="state.primary"></button>
+    <button class="btn" @click="ethEnabled">
+      <div class="text" v-html="state.primary"></div>
+    </button>
   </div>
   <div v-if="user">
     <div class="btn connected" v-html="state.primary"></div>
@@ -36,9 +38,22 @@ export default {
     const route = useRoute();
 
     const user = computed(() => store.state.User.user);
+    function shortenedAddress(address) {
+      if (!address) {
+        return "<i class='fas fa-spinner fa-spin'></i>";
+      }
+      const accountLength = address.length;
+      const connectedAddress = `${address.substring(
+        0,
+        5,
+      )}...${address.substring(accountLength - 4, accountLength)}`;
+      return connectedAddress;
+    }
 
     const state = reactive({
-      primary: 'SOMETHING WENT WRONG',
+      primary: computed(() => (store.state.User.fetching || store.state.User.user
+        ? shortenedAddress(store.state.User.user)
+        : 'CONNECT WALLET')),
       network: '',
       magicScrollsData: [],
     });
@@ -156,8 +171,8 @@ export default {
         const caller = await deguildCoin.methods
           .allowance(realAddress, shopAddress)
           .call();
-        // console.log(caller);
-        return caller <= balance && caller > 0;
+        console.log(caller);
+        return caller <= balance && caller >= 0;
       } catch (error) {
         return false;
       }
@@ -190,7 +205,6 @@ export default {
       state.network = await web3.eth.net.getNetworkType();
 
       if (state.network !== 'rinkeby') {
-        state.primary = 'CHANGE TO RINKEBY';
         return false;
       }
       return true;
@@ -210,7 +224,6 @@ export default {
      * Disconnect user from the dapp
      */
     function disconnected() {
-      state.primary = 'CONNECT WALLET';
       store.dispatch('User/setUser', null);
     }
 
@@ -257,24 +270,17 @@ export default {
 
       if (window.ethereum) {
         try {
-          const accounts = await window.ethereum.send('eth_requestAccounts');
-          const accountLength = accounts.result[0].length;
-          const connectedAddress = `${accounts.result[0].substring(
-            0,
-            5,
-          )}...${accounts.result[0].substring(
-            accountLength - 4,
-            accountLength,
-          )}`;
-          state.primary = connectedAddress;
-          const ownership = await isOwner(accounts.result[0]);
-          const balance = await checkBalance(accounts.result[0]);
-          const approve = await hasApproval(accounts.result[0]);
+          const accounts = await window.ethereum.request({
+            method: 'eth_requestAccounts',
+          });
+          const ownership = await isOwner(accounts[0]);
+          const balance = await checkBalance(accounts[0]);
+          const approve = await hasApproval(accounts[0]);
           let toAdd = [];
 
           store.dispatch(
             'User/setUser',
-            web3.utils.toChecksumAddress(accounts.result[0]),
+            web3.utils.toChecksumAddress(accounts[0]),
           );
           store.dispatch('User/setDeguildCoin', balance);
           store.dispatch('User/setOwner', ownership);
@@ -320,8 +326,7 @@ export default {
 
           return true;
         } catch (error) {
-          // console.log(error);
-          state.primary = 'ERROR!';
+          console.log(error);
         }
       } else {
         route.push('/no-provider');
@@ -356,7 +361,6 @@ export default {
      * Connect to the Ethereum network
      */
     async function ethEnabled() {
-      state.primary = "<i class='fas fa-spinner fa-spin'></i>";
       if (state.network !== 'rinkeby') {
         await connectToRinkeby();
         return false;
@@ -366,9 +370,6 @@ export default {
     }
 
     onBeforeMount(async () => {
-      if (!store.state.User.user && window.ethereum) {
-        state.primary = 'CONNECT WALLET';
-      }
       await verifyNetwork();
 
       window.ethereum.on('accountsChanged', handleAccountsChanged);
