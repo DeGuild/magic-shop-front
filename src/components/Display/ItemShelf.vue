@@ -111,7 +111,7 @@
             v-on:click="buy()"
             :class="{ disabled: state.buying }"
             :disabled="state.buying"
-            v-html="state.primary"
+            v-html="state.buyButton"
           ></button>
           <div class="text price">{{ state.imageSelected.price }} DGT</div>
         </div>
@@ -152,68 +152,68 @@
       </div>
       <input
         class="text course name"
-        v-model="scrollToAdd.addName"
+        v-model="scrollToAdd.name"
         placeholder="Course Name"
       />
       <input
         class="text course id"
-        v-model="scrollToAdd.addID"
+        v-model="scrollToAdd.id"
         placeholder="Course ID"
       />
       <input
         class="text course set-price"
-        v-model="scrollToAdd.addPrice"
+        v-model="scrollToAdd.price"
         placeholder="Price"
       />
       <button
         class="Button exam add"
-        :class="{ disabled: scrollToAdd.addHasLesson }"
-        v-on:click="selectExam()"
+        :class="{ disabled: scrollToAdd.hasLesson }"
+        @click="selectExam()"
       >
         Exam Only
       </button>
       <button
         class="Button both add"
-        :class="{ disabled: !scrollToAdd.addHasLesson }"
-        v-on:click="selectBoth()"
+        :class="{ disabled: !scrollToAdd.hasLesson }"
+        @click="selectBoth()"
       >
         Both
       </button>
 
-      <button class="Button buy" v-on:click="goNext">NEXT</button>
+      <button class="Button buy" @click="goNext">NEXT</button>
     </div>
   </div>
   <div class="selection item" v-if="state.nextPage">
     <div class="background item-box">
       <input
         class="text course prereq"
-        v-model="scrollToAdd.addPrereq"
+        v-model="scrollToAdd.prereq"
         placeholder="Address"
-        v-show="scrollToAdd.addHasPrereq"
+        v-show="scrollToAdd.hasPrereq"
       />
       <input
         class="text course prereqId"
-        v-model="scrollToAdd.addPrereqId"
+        v-model="scrollToAdd.prereqId"
         placeholder="Id"
-        v-show="scrollToAdd.addHasPrereq"
+        v-show="scrollToAdd.hasPrereq"
       />
       <textarea
         class="text course desc"
-        v-model="scrollToAdd.addDesc"
-        :class="{ 'no-prerequisite': !scrollToAdd.addHasPrereq }"
+        v-model="scrollToAdd.desc"
+        :class="{ 'no-prerequisite': !scrollToAdd.hasPrereq }"
         placeholder="Course Description"
       ></textarea>
       <button
         class="Button hasPrereq"
-        v-on:click="selectHasPrereq()"
-        v-html="scrollToAdd.primary3"
-        :class="{ disabled: !scrollToAdd.addHasPrereq }"
+        @click="selectHasPrereq()"
+        v-html="scrollToAdd.hasPrereqButton"
+        :class="{ disabled: !scrollToAdd.hasPrereq }"
       ></button>
-      <button class="Button back" v-on:click="goBack">BACK</button>
+      <button class="Button back" @click="goBack">BACK</button>
       <button
         class="Button buy"
-        v-html="scrollToAdd.primary2"
-        v-on:click="addScroll"
+        v-html="scrollToAdd.addScrollButton"
+        @click="addScroll"
         :class="{ disabled: scrollToAdd.adding }"
         :disabled="scrollToAdd.adding"
       ></button>
@@ -254,23 +254,12 @@ export default defineComponent({
     const owner = computed(() => store.state.User.owner);
 
     const state = reactive({
-      primary: 'BUY',
-      primary2: 'ADD',
-      primary3: 'Require prerequisite',
+      buyButton: 'BUY',
       addScroll: false,
       showBoth: false,
       showExam: false,
       showAll: false,
       nextPage: false,
-      addURL: null,
-      addName: null,
-      addID: null,
-      addPrice: null,
-      addHasPrereq: false,
-      addPrereq: null,
-      addPrereqId: null,
-      addDesc: null,
-      addHasLesson: false,
       buying: false,
       adding: false,
       scrollSelected: computed(() => (store.state.User.selectedScroll ? store.state.User.selectedScroll : null)),
@@ -353,15 +342,16 @@ export default defineComponent({
       imageData: null,
       fileName: 'Click to upload image',
       picture: noImg,
-      URL: null,
-      Name: null,
-      ID: null,
-      Price: null,
-      HasPrereq: false,
-      Prereq: null,
-      PrereqId: null,
-      Desc: null,
-      HasLesson: false,
+      addHasPrereq: 'ADD',
+      hasPrereqButton: 'Require prerequisite',
+      name: null,
+      id: null,
+      price: null,
+      hasLesson: null,
+      hasPrereq: null,
+      prereq: null,
+      prereqId: null,
+      desc: null,
     });
 
     function previewName(event) {
@@ -530,7 +520,7 @@ export default defineComponent({
      * @return {bool} ownership.
      */
     async function buy() {
-      state.primary = "<i class='fas fa-spinner fa-spin'></i>";
+      state.buyButton = "<i class='fas fa-spinner fa-spin'></i>";
       state.buying = true;
       store.dispatch(
         'User/setDialog',
@@ -544,7 +534,7 @@ export default defineComponent({
         const caller = await magicShop.methods
           .buyScroll(tokenId)
           .send({ from: realAddress });
-        state.primary = 'Buy';
+        state.buyButton = 'Buy';
         await choosing(tokenId);
         store.dispatch(
           'User/setDialog',
@@ -554,7 +544,7 @@ export default defineComponent({
 
         return caller;
       } catch (error) {
-        state.primary = 'Buy';
+        state.buyButton = 'Buy';
         state.buying = false;
 
         store.dispatch('User/setDialog', 'Transaction rejected!');
