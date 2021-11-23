@@ -4,22 +4,52 @@
   <div>
     <span class="panel left">
       <div><h1 class="title text">Download Scroll Transactions</h1></div>
+      <div class="selector-box">
+        <div>
+          <div class="title instruction">Courses</div>
+        </div>
+        <select class="selector-custom">
+          <option v-for="i in 100" :key="i">wtf</option>
+        </select>
+      </div>
+      <div class="selector-box">
+        <div>
+          <div class="title instruction">Round</div>
+        </div>
+        <select class="selector-custom">
+          <option>wtf</option>
+        </select>
+      </div>
+      <div class="explaination">
+        <h2>Instructions</h2>
+        <div>
+          <div class="explaination-text first">
+            1. Download .csv and fill out the ‘Pass’ column of the downloaded
+            .csv
+          </div>
+          <div class="explaination-text second">
+            2. Upload .csv and it will be used for minting certificates to the
+            users who PASSED.
+          </div>
+          <div class="explaination-text third">
+            3. Accept every transactions. Scrolls will be burned and mint
+            certificates.
+          </div>
+        </div>
+      </div>
 
-      <select>
-        <option>wtf</option>
-      </select>
-      <select>
-        <option>wtf</option>
-      </select>
       <div class="btn download">Download CSV</div>
     </span>
     <span class="panel right">
       <div><h1 class="title text">Preview certificate</h1></div>
 
       <img src="@/assets/no-url.jpg" />
-      <h1>name</h1>
-      <h2>round</h2>
-      <h2>token</h2>
+      <div class="preview" v-for="i in 4" :key="i">
+        <div>
+          <span class="preview-text">{{i}}:</span
+          ><span class="preview-text data">{{i}}</span>
+        </div>
+      </div>
       <div class="upload-pos">
         <div class="custom-file-upload">
           <label for="scroll-pic-upload" class="custom-file-upload button">
@@ -28,7 +58,7 @@
           </label>
         </div>
       </div>
-      <div class="btn upload">Upload</div>
+      <div class="btn upload">BATCH MINT</div>
     </span>
   </div>
   <input
@@ -144,7 +174,7 @@ input[type='file'] {
   width: 40vw;
   height: 5vw;
   bottom: 6vw;
-  left: 2.5vw;
+  left: 4.4vw;
   position: absolute;
 }
 .upload-preview {
@@ -241,7 +271,8 @@ input[type='file'] {
   }
 
   &.download {
-    left: 10vw;
+    left: 11vw;
+    bottom: 17vw;
   }
   &.upload {
     right: 10vw;
@@ -261,8 +292,77 @@ input[type='file'] {
     1px 1px 0 #000;
   &.text {
     width: 36vw;
-
     font-size: 2vw;
   }
+  &.instruction {
+    width: 36vw;
+    font-size: 1.5vw;
+  }
+}
+.preview {
+  padding-top: 0vw;
+  position: relative;
+  justify-content: center;
+  align-items: center;
+  background: whitesmoke;
+  width: 43vw;
+  left: 2vw;
+  top: 1vw;
+  height: 2.5vw;
+  font-size: 1.1vw;
+  font-family: Poppins;
+
+  color: black;
+}
+.preview-text {
+  position: absolute;
+  margin: 0.6vw 0.6vw 0.6vw 0.6vw;
+  font-weight: 900;
+  left: 0vw;
+  &.data {
+    display: inline-block;
+    left: 6vw;
+  }
+}
+.explaination {
+  position: absolute;
+  justify-content: center;
+  align-items: center;
+  background: grey;
+  width: 43vw;
+  left: 2vw;
+  height: 13vw;
+  bottom: 2vw;
+  font-size: 1.1vw;
+  font-family: Poppins;
+
+  color: white;
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000,
+    1px 1px 0 #000;
+}
+.explaination-text {
+  display: flex;
+  flex-direction: column;
+  left: 1vw;
+  font-size: 1vw;
+  position: absolute;
+  &.first {
+    top: 4.5vw;
+  }
+  &.second {
+    top: 6.5vw;
+  }
+  &.third {
+    top: 8.5vw;
+  }
+}
+.selector-custom {
+  width: 36vw;
+  height: 2vw;
+  font-family: Poppins;
+  font-size: 1vw;
+}
+.selector-box {
+  margin: 0.5vw 0.5vw 0.5vw 0.5vw;
 }
 </style>
