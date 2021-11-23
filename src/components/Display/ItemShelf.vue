@@ -22,7 +22,9 @@
         class="background frame click"
         :style="state.stylesFrame[imageIndex]"
         v-if="imageIndex - 1 + state.pageIdx * 8 < state.images.length"
-        v-on:click="choosing(imageIndex - 1 + state.pageIdx * 8)"
+        v-on:click="
+          state.loading ? null : choosing(imageIndex - 1 + state.pageIdx * 8)
+        "
       ></div>
       <div v-if="state.loading">
         <div class="image no-bg" :style="state.styles[imageIndex]">
@@ -40,7 +42,7 @@
     </div>
     <button
       class="Button addScroll"
-      v-on:click="addScrollToggle"
+      v-on:click="state.loading ? null : addScrollToggle()"
       v-if="owner && !state.addScroll"
     >
       Add Scroll
@@ -48,13 +50,13 @@
     <button
       class="Button addScroll cancel"
       v-if="state.addScroll"
-      v-on:click="cancelAdd"
+      v-on:click="state.loading ? null : cancelAdd()"
     >
       Cancel
     </button>
     <button
       class="Button previous"
-      v-on:click="showPrevious()"
+      v-on:click="state.loading ? null : showPrevious()"
       v-if="state.pageIdx > 0"
     >
       &#60;
@@ -62,27 +64,27 @@
     <button
       class="Button exam"
       :class="{ disabled: !state.showExam }"
-      v-on:click="showExam"
+      v-on:click="state.loading ? null : showExam()"
     >
       Exam Only
     </button>
     <button
       class="Button both"
       :class="{ disabled: !state.showBoth }"
-      v-on:click="showBoth"
+      v-on:click="state.loading ? null : showBoth()"
     >
       Both
     </button>
     <button
       class="Button all"
       :class="{ disabled: !state.showAll }"
-      v-on:click="showAll"
+      v-on:click="state.loading ? null : showAll()"
     >
       All
     </button>
     <button
       class="Button"
-      v-on:click="showNext()"
+      v-on:click="state.loading ? null : showNext()"
       v-if="state.pageIdx < state.images.length / 8 - 1"
     >
       &#62;
@@ -108,7 +110,7 @@
           </div>
           <button
             class="Button buy"
-            v-on:click="buy()"
+            v-on:click="state.loading ? null : buy()"
             :class="{ disabled: state.buying }"
             :disabled="state.buying"
             v-html="state.buyButton"
@@ -128,7 +130,12 @@
             {{ state.imageSelected.description }}
           </div>
           <div class="Button inaccessible">INACCESSIBLE</div>
-          <button class="Button info" v-on:click="moreInfo()">MORE INFO</button>
+          <button
+            class="Button info"
+            v-on:click="state.loading ? null : moreInfo()"
+          >
+            MORE INFO
+          </button>
           <div class="text price">{{ state.imageSelected.price }} DGT</div>
         </div>
       </div>
@@ -164,26 +171,47 @@
         class="text course set-price"
         v-model="scrollToAdd.price"
         placeholder="Price"
+        type="number"
+        min="0"
+        oninput="validity.valid||(value='');"
       />
       <button
         class="Button exam add"
         :class="{ disabled: scrollToAdd.hasLesson }"
-        @click="selectExam()"
+        @click="state.loading ? null : selectExam()"
       >
         Exam Only
       </button>
       <button
         class="Button both add"
         :class="{ disabled: !scrollToAdd.hasLesson }"
-        @click="selectBoth()"
+        @click="state.loading ? null : selectBoth()"
       >
         Both
       </button>
 
-      <button class="Button buy" @click="goNext">NEXT</button>
+      <button
+        class="Button buy"
+        :class="{
+          disabled:
+            !scrollToAdd.name ||
+            !scrollToAdd.id ||
+            !scrollToAdd.price ||
+            !scrollToAdd.imageData,
+        }"
+        @click="goNext"
+        :disabled="
+          !scrollToAdd.name ||
+          !scrollToAdd.id ||
+          !scrollToAdd.price ||
+          !scrollToAdd.imageData
+        "
+      >
+        NEXT
+      </button>
     </div>
   </div>
-  <div class="selection item" v-if="state.nextPage">
+  <div class="selection item" v-if="state.nextPage && state.addScroll">
     <div class="background item-box">
       <input
         class="text course prereq"
@@ -205,7 +233,7 @@
       ></textarea>
       <button
         class="Button hasPrereq"
-        @click="selectHasPrereq()"
+        @click="state.loading ? null : selectHasPrereq()"
         v-html="scrollToAdd.hasPrereqButton"
         :class="{ disabled: !scrollToAdd.hasPrereq }"
       ></button>
@@ -213,8 +241,8 @@
       <button
         class="Button buy"
         v-html="scrollToAdd.addButton"
-        @click="addScroll"
-        :class="{ disabled: scrollToAdd.adding }"
+        @click="state.loading || !scrollToAdd.desc ? null : addScroll()"
+        :class="{ disabled: scrollToAdd.adding || !scrollToAdd.desc }"
         :disabled="scrollToAdd.adding"
       ></button>
     </div>
@@ -247,7 +275,6 @@ const Web3 = require('web3');
 // const shopAddress = '0xFA0Db8E0f8138A1675507113392839576eD3052c';
 const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/V2/IMagicScrolls+.sol/IMagicScrollsPlus.json').abi;
 const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/V2/ISkillCertificate+.sol/ISkillCertificatePlus.json').abi;
-const noUrl = require('@/assets/no-url.jpg');
 require('dotenv').config();
 
 const shopAddress = process.env.VUE_APP_SHOP_ADDRESS;
@@ -344,6 +371,7 @@ export default defineComponent({
           top: '37.515vw',
         },
       ],
+      imageSelected: null,
     });
     const scrollToAdd = reactive({
       imageData: null,
@@ -354,8 +382,8 @@ export default defineComponent({
       name: null,
       id: null,
       price: null,
-      hasLesson: null,
-      hasPrereq: null,
+      hasLesson: false,
+      hasPrereq: false,
       prereq: null,
       prereqId: null,
       desc: null,
@@ -562,7 +590,6 @@ export default defineComponent({
 
     function addScrollToggle() {
       state.addScroll = true;
-      state.imageSelected = null;
       store.dispatch(
         'User/setDialog',
         'What kind of scroll would you like to add?',
@@ -597,15 +624,7 @@ export default defineComponent({
       if (!state.adding) {
         store.dispatch('User/setDialog', 'Cancelled! No scroll will be added!');
       }
-      state.addURL = null;
-      state.addName = null;
-      state.addID = null;
-      state.addPrice = null;
-      state.addPrereq = null;
-      state.addPrereqId = null;
-      state.addDesc = null;
       state.addScroll = false;
-      state.nextPage = false;
     }
 
     async function addScroll() {
@@ -620,7 +639,13 @@ export default defineComponent({
       try {
         const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
         const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
-        const currentType = await magicShop.methods.numberOfScrollTypes().call();
+        const preRequisite = web3.utils.isAddress(scrollToAdd.prereq)
+          ? scrollToAdd.prereq
+          : '0x0000000000000000000000000000000000000000';
+        const price = web3.utils.toWei(scrollToAdd.price.toString(), 'ether');
+        const currentType = await magicShop.methods
+          .numberOfScrollTypes()
+          .call();
         // generating a token with 1 day of expiration time
         const token = await Web3Token.sign(
           (msg) => web3.eth.personal.sign(msg, realAddress),
@@ -640,77 +665,94 @@ export default defineComponent({
         uploadTask.on(
           'state_changed',
           (snapshot) => {
-          // Observe state change events such as progress, pause, and resume
-          // console.log(`Upload is ${progress}% done`);
-          // eslint-disable-next-line default-case
+            // Observe state change events such as progress, pause, and resume
+            // console.log(`Upload is ${progress}% done`);
+            // eslint-disable-next-line default-case
             switch (snapshot.state) {
               case 'paused':
-              // console.log('Upload is paused');
+                // console.log('Upload is paused');
                 break;
               case 'running':
-              // console.log('Upload is running');
+                // console.log('Upload is running');
                 break;
             }
           },
           (error) => {
-          // Handle unsuccessful uploads
+            // Handle unsuccessful uploads
             console.error(error.message);
             store.dispatch('User/setFetching', false);
           },
           async () => {
-            getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
-            // console.log('File available at', downloadURL);
-              scrollToAdd.picture = downloadURL;
-              const preRequisite = web3.utils.isAddress(scrollToAdd.prereq)
-                ? scrollToAdd.prereq
-                : '0x0000000000000000000000000000000000000000';
-              const price = web3.utils.toWei(scrollToAdd.price, 'ether');
+            getDownloadURL(uploadTask.snapshot.ref).then(
+              async (downloadURL) => {
+                try {
+                  console.log('File available at', downloadURL);
+                  scrollToAdd.picture = downloadURL;
 
-              const caller = await magicShop.methods
-                .addScroll(
-                  scrollToAdd.prereqId,
-                  preRequisite,
-                  scrollToAdd.hasLesson,
-                  scrollToAdd.hasPrereq,
-                  price,
-                )
-                .send({ from: realAddress });
-              const requestOptions = {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  url: downloadURL,
-                  address: shopAddress,
-                  tokenId: caller.events.ScrollAdded.returnValues.scrollID,
-                  name: scrollToAdd.name,
-                  courseId: scrollToAdd.id,
-                  description: scrollToAdd.desc,
-                }),
-              };
-              await fetch(
-                'https://us-central1-deguild-2021.cloudfunctions.net/shop/addMagicScroll',
-                requestOptions,
-              );
+                  const requestOptions = {
+                    method: 'POST',
+                    headers: {
+                      Authorization: token,
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      url: downloadURL,
+                      address: shopAddress,
+                      tokenId: currentType.toString(),
+                      name: scrollToAdd.name,
+                      courseId: scrollToAdd.id,
+                      description: scrollToAdd.desc,
+                    }),
+                  };
+                  await fetch(
+                    'https://us-central1-deguild-2021.cloudfunctions.net/shop/addMagicScroll',
+                    requestOptions,
+                  );
 
-              cancelAdd();
-              store.dispatch(
-                'User/setDialog',
-                'Transaction completed! I will tell the customers about it!',
-              );
-              scrollToAdd.addButton = 'Add';
-              state.adding = false;
+                  const transaction = await magicShop.methods
+                    .addScroll(
+                      scrollToAdd.prereqId,
+                      preRequisite,
+                      scrollToAdd.hasLesson,
+                      scrollToAdd.hasPrereq,
+                      price,
+                    )
+                    .send({ from: realAddress });
 
-              store.dispatch('User/setRegistration', true);
-              store.dispatch(
-                'User/setDialog',
-                'Alright, we will change that for you!',
-              );
-              store.dispatch('User/setFetching', false);
-              return caller;
-            });
+                  console.log(transaction);
+
+                  cancelAdd();
+                  store.dispatch(
+                    'User/setDialog',
+                    'Transaction completed! I will tell the customers about it!',
+                  );
+                  scrollToAdd.addButton = 'Add';
+                  state.adding = false;
+
+                  store.dispatch('User/setRegistration', true);
+                  store.dispatch(
+                    'User/setDialog',
+                    'Alright, we will change that for you!',
+                  );
+                  store.dispatch('User/setFetching', false);
+                  return transaction;
+                } catch (error) {
+                  scrollToAdd.addButton = 'Add';
+                  state.adding = false;
+                  store.dispatch('User/setFetching', false);
+
+                  store.dispatch(
+                    'User/setDialog',
+                    'Transaction rejected! Have you changed your mind?',
+                  );
+                  return null;
+                }
+              },
+            );
           },
         );
       } catch (error) {
+        console.log(error);
         scrollToAdd.addButton = 'Add';
         state.adding = false;
         store.dispatch('User/setFetching', false);
