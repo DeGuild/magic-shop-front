@@ -37,6 +37,7 @@ export default defineComponent({
   },
 });
 </script>
+
 <style scoped lang="scss">
 ul {
   list-style-type: none;
@@ -46,6 +47,7 @@ ul {
   background-color: #333;
   position: fixed;
   top: 0;
+  left: 0;
   width: 100%;
 }
 
@@ -66,9 +68,11 @@ li {
     background-color: #111;
   }
 }
+
 .active {
   background-color: #04aa6d;
 }
+
 .overlay {
   /* Rectangle 9939 */
 
