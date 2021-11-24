@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import ConnectWallet from '../views/MagicShop.vue';
 import AdminPage from '../views/AdminPage.vue';
+import CertificatePage from '../views/CertificatePage.vue';
 
 const routes = [
   {
@@ -12,6 +13,11 @@ const routes = [
     path: '/admin',
     name: 'admin',
     component: AdminPage,
+  },
+  {
+    path: '/manager',
+    name: 'manager',
+    component: CertificatePage,
   },
   {
     path: '/no-provider',

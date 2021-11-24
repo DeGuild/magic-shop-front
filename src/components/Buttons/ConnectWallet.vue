@@ -28,7 +28,6 @@ require('dotenv').config();
 const shopAddress = process.env.VUE_APP_SHOP_ADDRESS;
 const dgcAddress = process.env.VUE_APP_DGC_ADDRESS;
 const dgcABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/Tokens/DeGuildCoinERC20.sol/DeGuildCoinERC20.json').abi;
-const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/V2/IMagicScrolls+.sol/IMagicScrollsPlus.json').abi;
 const ownerABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/@openzeppelin/contracts/access/Ownable.sol/Ownable.json').abi;
 // DeGuild-MG-CS-Token-contracts/artifacts/@openzeppelin/contracts/access/Ownable.sol/Ownable.json
 export default {
@@ -66,78 +65,27 @@ export default {
      * @param {address} nextToFetch The address we lastly fetched
      * @return {address[]} all certificates in the DeGuild system.
      */
-    async function fetchAllMagicScrolls(nextToFetch) {
+    async function fetchAllMagicScrolls(pageidx) {
       // console.log(nextToFetch);
-      let response = null;
-      if (nextToFetch) {
-        response = await fetch(
-          `https://us-central1-deguild-2021.cloudfunctions.net/app/allMagicScrolls/${shopAddress}/${nextToFetch}/next`,
-          { mode: 'cors' },
-        );
-      } else {
-        response = await fetch(
-          `https://us-central1-deguild-2021.cloudfunctions.net/app/allMagicScrolls/${shopAddress}`,
-          { mode: 'cors' },
-        );
-      }
+      const response = await fetch(
+        `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/${shopAddress}/${user.value}/${pageidx}`,
+        { mode: 'cors' },
+      );
 
       const magicScrolls = await response.json();
-      // console.log(nextToFetch, magicScrolls);
 
-      // eslint-disable-next-line max-len
-      const sortedById = magicScrolls.sort((a, b) => (parseInt(a.tokenId, 10) > parseInt(b.tokenId, 10) ? 1 : -1));
+      const nextIsPossible = await fetch(
+        `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/${shopAddress}/${user.value}/${pageidx + 1}`,
+        { mode: 'cors' },
+      );
 
-      const next = sortedById.length > 0
-        ? sortedById[sortedById.length - 1].tokenId
-        : null;
-      // console.log(next);
-      store.dispatch('User/setMagicScrollToFetch', next);
-      // console.log(magicScrolls);
+      if (nextIsPossible.status === 200) {
+        store.dispatch('User/setMagicScrollToFetch', true);
+      } else {
+        store.dispatch('User/setMagicScrollToFetch', false);
+      }
       // console.log(next);
       return magicScrolls;
-    }
-
-    /**
-     * Returns data of the token.
-     *
-     * @param {int} tokenId The address of any contract using the interface given
-     * @return {object} token object that looks like this
-     * { uint256 - tokenId      : 3
-     *   uint256 - price        : 20
-     *   address - prerequisite : 0x0000000000000000000000000000000000000000
-     *   bool - hasLesson       : false
-     *   bool - hasPrerequisite : false
-     *   bool - available       : true}
-     */
-    async function scrollTypeInfo(tokenId) {
-      const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
-
-      try {
-        const caller = await magicShop.methods.scrollTypeInfo(tokenId).call();
-        return caller;
-      } catch (error) {
-        // console.error('Not purchasable');
-        return null;
-      }
-    }
-
-    /**
-     * Returns whether user can purchase this token
-     *
-     * @param {int} tokenId The tokenId of any shop using the interface given
-     * @return {bool} purchasablility.
-     */
-    async function isPurchaseable(tokenId, address) {
-      const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
-      try {
-        const caller = await magicShop.methods
-          .isPurchasableScroll(tokenId, address)
-          .call();
-        return caller;
-      } catch (error) {
-        console.error(tokenId);
-        return false;
-      }
     }
 
     /**
@@ -172,8 +120,7 @@ export default {
         const caller = await deguildCoin.methods
           .allowance(realAddress, shopAddress)
           .call();
-        console.log(caller);
-        return caller <= balance && caller >= 0;
+        return caller <= balance && caller > 0;
       } catch (error) {
         return false;
       }
@@ -229,40 +176,6 @@ export default {
     }
 
     /**
-     * Returns the information of the certificate of this user
-     *
-     * @param {address} address The address of any contract using the interface given
-     * @return {certificate[]} array of the certificates.
-     */
-    async function tokenSetup(data) {
-      // console.log(data.tokenId);
-      const purchasable = await isPurchaseable(
-        data.tokenId,
-        store.state.User.user,
-      );
-      const onChain = await scrollTypeInfo(data.tokenId);
-
-      if (onChain) {
-        const token = {
-          tokenId: data.tokenId,
-          url: data.url,
-          name: data.name,
-          courseId: data.courseId,
-          description: data.description,
-          purchasable,
-          price: web3.utils.fromWei(onChain[1], 'ether'),
-          prerequisiteId: onChain[2],
-          prerequisite: onChain[3],
-          hasLesson: onChain[4],
-          hasPrerequisite: onChain[5],
-          available: onChain[6],
-        };
-        return token;
-      }
-      return null;
-    }
-
-    /**
      * Connect user to the dapp
      * @return {bool} status of connection.
      */
@@ -277,9 +190,11 @@ export default {
           const ownership = await isOwner(accounts[0]);
           const balance = await checkBalance(accounts[0]);
           const approve = await hasApproval(accounts[0]);
-          let toAdd = [];
 
           if (route.name === 'admin' && !ownership) {
+            router.push('/');
+          }
+          if (route.name === 'manager' && !ownership) {
             router.push('/');
           }
 
@@ -305,22 +220,10 @@ export default {
           }
 
           // const userCertificates = [];
-          let scrollsData = await fetchAllMagicScrolls();
+          const scrollsData = await fetchAllMagicScrolls(0);
           state.magicScrollsData = scrollsData;
 
-          while (await store.state.User.scrollToFetch) {
-            scrollsData = await fetchAllMagicScrolls(
-              store.state.User.scrollToFetch,
-            );
-            state.magicScrollsData = state.magicScrollsData.concat(scrollsData);
-          }
-
-          const tokenAvailability = await Promise.all(
-            state.magicScrollsData.map(tokenSetup),
-          );
-
-          toAdd = toAdd.concat(tokenAvailability.filter((obj) => obj !== null));
-          store.dispatch('User/setMagicScrolls', toAdd);
+          store.dispatch('User/setMagicScrolls', scrollsData);
 
           store.dispatch('User/setFetching', false);
           console.log(store.state.User.scrollList);

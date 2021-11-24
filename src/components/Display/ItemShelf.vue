@@ -85,7 +85,7 @@
     <button
       class="Button"
       v-on:click="state.loading ? null : showNext()"
-      v-if="state.pageIdx < state.images.length / 8 - 1"
+      v-if="state.hasNext"
     >
       &#62;
     </button>
@@ -96,7 +96,7 @@
     <div class="background item-box">
       <div class="background current-item-frame" />
       <div v-if="state.imageSelected">
-        <div v-if="state.imageSelected.purchasable">
+        <div v-if="state.imageSelected.isPurchasable">
           <div class="image selected">
             <img
               class="image selected display"
@@ -117,7 +117,7 @@
           ></button>
           <div class="text price">{{ state.imageSelected.price }} DGT</div>
         </div>
-        <div v-if="!state.imageSelected.purchasable">
+        <div v-if="!state.imageSelected.isPurchasable">
           <div class="image selected">
             <img
               class="image selected display"
@@ -299,6 +299,7 @@ export default defineComponent({
       scrollSelected: computed(() => (store.state.User.selectedScroll ? store.state.User.selectedScroll : null)),
       loading: computed(() => store.state.User.fetching),
       pageIdx: 0,
+      hasNext: computed(() => store.state.User.scrollToFetch),
       images: computed(() => (store.state.User.scrollList ? store.state.User.scrollList : [])),
       own: 0,
       styles: [
@@ -501,7 +502,7 @@ export default defineComponent({
      */
     async function choosing(imageIdx) {
       state.imageSelected = state.images[imageIdx];
-      // console.log(state.imageSelected);
+      console.log(state.imageSelected);
       store.dispatch(
         'User/setDialog',
         'Counting your owned scrolls for this one...',
@@ -509,7 +510,7 @@ export default defineComponent({
       state.own = '...';
       state.own = await getBalanceOf(state.imageSelected);
 
-      if (state.imageSelected.purchasable) {
+      if (state.imageSelected.isPurchasable) {
         store.dispatch('User/setDialog', 'Would you like to buy more?');
       } else {
         const prerequisiteTitle = await getTitle(
@@ -547,7 +548,18 @@ export default defineComponent({
         store.dispatch('User/setDialog', `${title} by ${name} is required`);
       }
     }
+    async function fetchAllMagicScrolls(pageidx) {
+      // console.log(nextToFetch);
+      const response = await fetch(
+        `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/${shopAddress}/${store.state.User.user}/${pageidx}`,
+        { mode: 'cors' },
+      );
 
+      const magicScrolls = await response.json();
+      // console.log(magicScrolls);
+      // console.log(next);
+      return magicScrolls;
+    }
     /**
      * Returns whether user is the owner of this shop
      *
@@ -610,14 +622,19 @@ export default defineComponent({
     function goBack() {
       state.nextPage = false;
     }
-    function showNext() {
+    async function showNext() {
       state.pageIdx += 1;
       store.dispatch('User/setFetching', true);
+      const scrollsData = await fetchAllMagicScrolls(state.pageIdx);
+      store.dispatch('User/setMagicScrolls', scrollsData);
       setTimeout(() => store.dispatch('User/setFetching', false), 100);
     }
-    function showPrevious() {
+    async function showPrevious() {
       state.pageIdx -= 1;
       store.dispatch('User/setFetching', true);
+      store.dispatch('User/setFetching', true);
+      const scrollsData = await fetchAllMagicScrolls(state.pageIdx);
+      store.dispatch('User/setMagicScrolls', scrollsData);
       setTimeout(() => store.dispatch('User/setFetching', false), 100);
     }
     function cancelAdd() {

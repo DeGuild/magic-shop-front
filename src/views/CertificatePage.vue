@@ -1,9 +1,8 @@
 <template>
   <navigation-bar></navigation-bar>
-
   <connect-wallet />
   <div v-if="user !== null">
-    <admin-panel v-if="true"></admin-panel>
+    <certificate-manager></certificate-manager>
   </div>
   <no-wallet v-if="user === null" />
 </template>
@@ -13,7 +12,7 @@ import { useStore } from 'vuex';
 import { computed } from 'vue';
 import ConnectWallet from '../components/Buttons/ConnectWallet.vue';
 import NoWallet from '../components/General/NoWallet.vue';
-import AdminPanel from '../components/General/AdminPanel.vue';
+import CertificateManager from '../components/General/CertificateManager.vue';
 import NavigationBar from '../components/General/NavigationBar.vue';
 // @ is an alias to /src
 
@@ -22,7 +21,7 @@ export default {
   components: {
     ConnectWallet,
     NoWallet,
-    AdminPanel,
+    CertificateManager,
     NavigationBar,
   },
   setup() {

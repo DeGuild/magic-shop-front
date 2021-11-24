@@ -7,7 +7,7 @@ export const UserModule = {
     scrollList: null,
     approval: false,
     selectedScroll: null,
-    scrollToFetch: null,
+    scrollToFetch: false,
     fetching: false,
     dialog: "Welcome to Mona's shop",
     dgcBalance: 0,
@@ -28,8 +28,8 @@ export const UserModule = {
     SET_SCROLL_SELECTED(state, scroll) {
       state.selectedScroll = scroll;
     },
-    SET_SCROLL_TO_FETCH(state, scroll) {
-      state.scrollToFetch = scroll;
+    SET_SCROLL_TO_FETCH(state, status) {
+      state.scrollToFetch = status;
     },
     SET_DIALOG(state, text) {
       state.dialog = text;
@@ -74,8 +74,8 @@ export const UserModule = {
     setSelectedMagicScroll({ commit }, scroll) {
       commit('SET_SCROLL_SELECTED', scroll);
     },
-    setMagicScrollToFetch({ commit }, scroll) {
-      commit('SET_SCROLL_TO_FETCH', scroll);
+    setMagicScrollToFetch({ commit }, status) {
+      commit('SET_SCROLL_TO_FETCH', status);
     },
     setDeguildCoin({ commit }, balance) {
       commit('SET_SCROLL_TO_FETCH', balance);
