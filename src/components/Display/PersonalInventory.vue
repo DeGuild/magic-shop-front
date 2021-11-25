@@ -41,8 +41,8 @@
       </div>
     </div>
     <button
-      class="Button addScroll cancel"
-      v-if="state.addScroll"
+      class="Button consuming cancel"
+      v-if="state.consuming"
       v-on:click="state.loading ? null : cancelAdd()"
     >
       Cancel
@@ -82,7 +82,7 @@
     >
       &#62;
     </button>
-    <div class="background overlay" v-if="state.addScroll"></div>
+    <div class="background overlay" v-if="state.consuming"></div>
   </div>
 
   <div class="selection item">
@@ -97,89 +97,45 @@
             />
           </div>
           <div class="text">{{ state.imageSelected.name }}</div>
-          <div class="text own">Owned: {{ state.own }}</div>
+          <div class="text own">TokenId: {{ state.imageSelected.tokenId }}</div>
           <div class="text description">
             {{ state.imageSelected.description }}
           </div>
           <button
             class="Button buy"
-            v-on:click="state.loading ? null : buy()"
+            v-on:click="state.loading ? null : consume()"
             :class="{ disabled: state.buying }"
             :disabled="state.buying"
-            v-html="state.buyButton"
+            v-html="state.consumeButton"
           ></button>
-          <div class="text price">{{ state.imageSelected.price }} DGT</div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- For consuming -->
-  <div class="selection item" v-if="state.addScroll">
+  <div class="selection item" v-if="state.consuming">
     <div class="background item-box">
-      <div class="background current-item-frame" />
-      <div class="image selected">
-        <img class="image selected display" :src="scrollToAdd.picture" />
-      </div>
-      <div class="upload-pos">
-        <div class="custom-file-upload">
-          <label for="scroll-pic-upload" class="custom-file-upload button">
-            <i class="fas fa-paperclip"></i>
-            <span class="upload-preview">{{ scrollToAdd.fileName }}</span>
-          </label>
-        </div>
-      </div>
+      <h1 class="text passcode label">Type your passcode</h1>
       <input
-        class="text course name"
-        v-model="scrollToAdd.name"
-        placeholder="Course Name"
+        class="text passcode"
+        v-model="state.passcode"
+        placeholder="secret"
+        type="password"
       />
-      <input
-        class="text course id"
-        v-model="scrollToAdd.id"
-        placeholder="Course ID"
-      />
-      <input
-        class="text course set-price"
-        v-model="scrollToAdd.price"
-        placeholder="Price"
-        type="number"
-        min="0"
-        oninput="validity.valid||(value='');"
-      />
-      <button
-        class="Button exam add"
-        :class="{ disabled: scrollToAdd.hasLesson }"
-        @click="state.loading ? null : selectExam()"
-      >
-        Exam Only
-      </button>
-      <button
-        class="Button both add"
-        :class="{ disabled: !scrollToAdd.hasLesson }"
-        @click="state.loading ? null : selectBoth()"
-      >
-        Both
-      </button>
+      <h1 class="text passcode instruction">
+        *Passcode is given by your instructor
+      </h1>
 
       <button
         class="Button buy"
         :class="{
-          disabled:
-            !scrollToAdd.name ||
-            !scrollToAdd.id ||
-            !scrollToAdd.price ||
-            !scrollToAdd.imageData,
+          disabled: !state.passcode,
         }"
-        @click="goNext"
-        :disabled="
-          !scrollToAdd.name ||
-          !scrollToAdd.id ||
-          !scrollToAdd.price ||
-          !scrollToAdd.imageData
-        "
+        @click="sendConsume()"
+        :disabled="!state.passcode"
       >
-        NEXT
+        DONE
       </button>
     </div>
   </div>
@@ -189,15 +145,10 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable max-len */
 
-import { defineComponent, reactive, computed } from 'vue';
-import { useStore } from 'vuex';
 import {
-  getStorage,
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-} from 'firebase/storage';
-import Web3Token from 'web3-token';
+  defineComponent, reactive, computed, onBeforeMount,
+} from 'vue';
+import { useStore } from 'vuex';
 
 const Web3 = require('web3');
 
@@ -214,11 +165,11 @@ export default defineComponent({
   setup() {
     const store = useStore();
     const web3 = new Web3(Web3.givenProvider || 'ws://localhost:8545');
-    const owner = computed(() => store.state.User.owner);
 
     const state = reactive({
-      buyButton: 'BUY',
-      addScroll: false,
+      consumeButton: 'CONSUME',
+      passcode: null,
+      consuming: false,
       showBoth: false,
       showExam: false,
       showAll: false,
@@ -350,50 +301,14 @@ export default defineComponent({
           .balanceOfOne(realAddress, imageSelected.tokenId)
           .call();
         // console.log(caller);
-        return caller;
+        return parseInt(caller, 10);
       } catch (error) {
         // console.error('Not purchasable');
         return {};
       }
     }
-    /**
-     * Returns the url of the certificate address
-     *
-     * @param {address} address The certificate's address
-     * @return {string} certificate's url.
-     */
-    async function getTitle(address, tokenType) {
-      const imageUrl = await fetch(
-        `https://us-central1-deguild-2021.cloudfunctions.net/app/readCertificate/${address}/${tokenType}`,
-        { mode: 'cors' },
-      );
-
-      const dataUrl = await imageUrl.json();
-      // console.log(dataUrl.url);
-      return dataUrl.title;
-    }
-
-    async function getManagerName(address) {
-      const certificateManager = new web3.eth.Contract(
-        skillCertificateABI,
-        address,
-      );
-      const caller = await certificateManager.methods.name().call();
-      return caller;
-    }
-    /**
-     * Returns name of the address.
-     *
-     * @param {address} address The address of any contract using the interface given
-     * @return {string} name of the contract.
-     */
-    async function isShopOwnPrerequisite(address) {
-      const certificateManager = new web3.eth.Contract(
-        skillCertificateABI,
-        address,
-      );
-      const caller = await certificateManager.methods.shop().call();
-      return caller === shopAddress;
+    function consume() {
+      state.consuming = true;
     }
 
     /**
@@ -405,69 +320,53 @@ export default defineComponent({
     async function choosing(imageIdx) {
       state.imageSelected = state.images[imageIdx];
       console.log(state.imageSelected);
-      store.dispatch(
-        'User/setDialog',
-        'Counting your owned scrolls for this one...',
-      );
-      state.own = '...';
-      state.own = await getBalanceOf(state.imageSelected);
-
-      if (state.imageSelected.isPurchasable) {
-        store.dispatch('User/setDialog', 'Would you like to buy more?');
-      } else {
-        const prerequisiteTitle = await getTitle(
-          state.imageSelected.prerequisite,
-          state.imageSelected.prerequisiteId,
-        );
-        store.dispatch(
-          'User/setDialog',
-          `You need to earn ${prerequisiteTitle} certificate first!`,
-        );
-      }
+      state.own = state.imageSelected.own;
     }
 
-    /**
-     * Returns whether user is the owner of this shop
-     *
-     * @param {address} address ethereum address
-     * @return {bool} ownership.
-     */
-    async function moreInfo() {
-      const { prerequisite, prerequisiteId } = state.imageSelected;
-      const confirm = await isShopOwnPrerequisite(prerequisite);
-      const type = await getTokenType(prerequisite, prerequisiteId);
-      // console.log(state.imageSelected);
-      console.log(confirm, type, prerequisite);
-      if (confirm) {
-        await choosing(type);
-        store.dispatch(
-          'User/setDialog',
-          `Please earn the certificate of this scroll, ${state.images[type].name}.`,
-        );
-      } else {
-        const title = await getTitle(prerequisite, prerequisiteId);
-        const name = await getManagerName(prerequisite, prerequisiteId);
-        store.dispatch('User/setDialog', `${title} by ${name} is required`);
-      }
-    }
     async function fetchAllMagicScrolls(pageidx) {
       // console.log(nextToFetch);
       const response = await fetch(
-        `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/${shopAddress}/${store.state.User.user}/${pageidx}`,
+        `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/inventory/${shopAddress}/${store.state.User.user}/${pageidx}`,
         { mode: 'cors' },
       );
 
       const magicScrolls = await response.json();
-      // console.log(magicScrolls);
+      const nextIsPossible = await fetch(
+        `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/inventory/${shopAddress}/${
+          store.state.User.user
+        }/${pageidx + 1}`,
+        { mode: 'cors' },
+      );
+
+      if (nextIsPossible.status === 200) {
+        store.dispatch('User/setMagicScrollToFetch', true);
+      } else {
+        store.dispatch('User/setMagicScrollToFetch', false);
+      }
       // console.log(next);
       return magicScrolls;
     }
 
-    function goNext() {
-      state.nextPage = true;
-    }
-    function goBack() {
-      state.nextPage = false;
+    async function sendConsume() {
+      store.dispatch('User/setFetching', true);
+
+      const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
+      const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
+
+      try {
+        const tranasction = await magicShop.methods
+          .consume(state.imageSelected.tokenId, state.passcode)
+          .send({ from: realAddress });
+        console.log(tranasction);
+        store.dispatch('User/setFetching', false);
+
+        return tranasction;
+      } catch (error) {
+        store.dispatch('User/setFetching', false);
+
+        // console.error('Not purchasable');
+        return {};
+      }
     }
     async function showNext() {
       state.pageIdx += 1;
@@ -485,10 +384,7 @@ export default defineComponent({
       setTimeout(() => store.dispatch('User/setFetching', false), 100);
     }
     function cancelAdd() {
-      if (!state.adding) {
-        store.dispatch('User/setDialog', 'Cancelled! No scroll will be added!');
-      }
-      state.addScroll = false;
+      state.consuming = false;
     }
     function showAll() {
       state.showAll = true;
@@ -497,7 +393,6 @@ export default defineComponent({
       state.pageIdx = 0;
 
       state.images = computed(() => (store.state.User.scrollList ? store.state.User.scrollList : []));
-      store.dispatch('User/setDialog', 'All scrolls are shown.');
     }
     function showBoth() {
       state.showBoth = true;
@@ -508,10 +403,6 @@ export default defineComponent({
       state.images = computed(() => (store.state.User.scrollList
         ? store.state.User.scrollList.filter((obj) => obj.hasLesson)
         : []));
-      store.dispatch(
-        'User/setDialog',
-        'These scrolls will teach you skills and let you earn certificate.',
-      );
     }
     function showExam() {
       state.showExam = true;
@@ -522,22 +413,24 @@ export default defineComponent({
       state.images = computed(() => (store.state.User.scrollList
         ? store.state.User.scrollList.filter((obj) => !obj.hasLesson)
         : []));
-      store.dispatch(
-        'User/setDialog',
-        'These scrolls let you earn certificate, but you do not get to learn the lessons',
-      );
     }
+    onBeforeMount(async () => {
+      store.dispatch('User/setFetching', true);
+
+      const scrollsData = await fetchAllMagicScrolls(0);
+      store.dispatch('User/setMagicScrolls', scrollsData);
+      store.dispatch('User/setFetching', false);
+    });
 
     return {
       state,
       choosing,
+      consume,
       showAll,
       showBoth,
       showExam,
-      moreInfo,
       cancelAdd,
-      goNext,
-      goBack,
+      sendConsume,
       showNext,
       showPrevious,
     };
@@ -739,7 +632,7 @@ input[type='file'] {
     }
   }
 
-  &.addScroll {
+  &.consuming {
     width: 15.938vw;
     top: 18.125vw;
     left: 80vw;
@@ -953,55 +846,34 @@ input[type='file'] {
     text-align: left;
   }
 
+  &.passcode {
+    top: 8vw;
+    height: 4vw;
+    width: 28vw;
+    left: 4vw;
+    color: rgba(26, 26, 26, 0.6);
+    &.label {
+      top: 3.5vw;
+      left: -3vw;
+      color: rgb(255, 255, 255);
+    }
+    &.instruction {
+      font-size: 1vw;
+
+      top: 12vw;
+      left: -0.5vw;
+      color: rgb(255, 255, 255);
+    }
+  }
+
   &.course {
     height: 4vw;
     width: 28vw;
     left: 4vw;
     color: rgba(26, 26, 26, 0.6);
 
-    &.url {
-      text-align: center;
-      left: 12.5vw;
-      top: 4vw;
-      width: 19.5vw;
-    }
-
     &.name {
       top: 15vw;
-    }
-
-    &.id {
-      top: 22vw;
-    }
-
-    &.set-price {
-      height: 3vw;
-      width: 11vw;
-      top: 30vw;
-    }
-
-    &.prereq {
-      top: 7vw;
-      height: 4vw;
-      width: 20vw;
-    }
-
-    &.prereqId {
-      top: 7vw;
-      height: 4vw;
-      left: 25vw;
-
-      width: 7vw;
-    }
-
-    &.desc {
-      text-align: start;
-      top: 13vw;
-      height: 12vw;
-
-      &.no-prerequisite {
-        top: 7vw;
-      }
     }
   }
 }

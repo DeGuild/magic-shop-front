@@ -260,7 +260,9 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable max-len */
 
-import { defineComponent, reactive, computed } from 'vue';
+import {
+  defineComponent, reactive, computed, onBeforeMount,
+} from 'vue';
 import { useStore } from 'vuex';
 import {
   getStorage,
@@ -556,6 +558,17 @@ export default defineComponent({
       );
 
       const magicScrolls = await response.json();
+
+      const nextIsPossible = await fetch(
+        `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/${shopAddress}/${store.state.User.user}/${pageidx + 1}`,
+        { mode: 'cors' },
+      );
+
+      if (nextIsPossible.status === 200) {
+        store.dispatch('User/setMagicScrollToFetch', true);
+      } else {
+        store.dispatch('User/setMagicScrollToFetch', false);
+      }
       // console.log(magicScrolls);
       // console.log(next);
       return magicScrolls;
@@ -631,7 +644,6 @@ export default defineComponent({
     }
     async function showPrevious() {
       state.pageIdx -= 1;
-      store.dispatch('User/setFetching', true);
       store.dispatch('User/setFetching', true);
       const scrollsData = await fetchAllMagicScrolls(state.pageIdx);
       store.dispatch('User/setMagicScrolls', scrollsData);
@@ -819,6 +831,13 @@ export default defineComponent({
         'These scrolls let you earn certificate, but you do not get to learn the lessons',
       );
     }
+    onBeforeMount(async () => {
+      store.dispatch('User/setFetching', true);
+
+      const scrollsData = await fetchAllMagicScrolls(0);
+      store.dispatch('User/setMagicScrolls', scrollsData);
+      store.dispatch('User/setFetching', false);
+    });
 
     return {
       state,

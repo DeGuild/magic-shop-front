@@ -65,28 +65,28 @@ export default {
      * @param {address} nextToFetch The address we lastly fetched
      * @return {address[]} all certificates in the DeGuild system.
      */
-    async function fetchAllMagicScrolls(pageidx) {
-      // console.log(nextToFetch);
-      const response = await fetch(
-        `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/${shopAddress}/${user.value}/${pageidx}`,
-        { mode: 'cors' },
-      );
+    // async function fetchAllMagicScrolls(pageidx) {
+    //   // console.log(nextToFetch);
+    //   const response = await fetch(
+    //     `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/${shopAddress}/${user.value}/${pageidx}`,
+    //     { mode: 'cors' },
+    //   );
 
-      const magicScrolls = await response.json();
+    //   const magicScrolls = await response.json();
 
-      const nextIsPossible = await fetch(
-        `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/${shopAddress}/${user.value}/${pageidx + 1}`,
-        { mode: 'cors' },
-      );
+    //   const nextIsPossible = await fetch(
+    //     `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/${shopAddress}/${user.value}/${pageidx + 1}`,
+    //     { mode: 'cors' },
+    //   );
 
-      if (nextIsPossible.status === 200) {
-        store.dispatch('User/setMagicScrollToFetch', true);
-      } else {
-        store.dispatch('User/setMagicScrollToFetch', false);
-      }
-      // console.log(next);
-      return magicScrolls;
-    }
+    //   if (nextIsPossible.status === 200) {
+    //     store.dispatch('User/setMagicScrollToFetch', true);
+    //   } else {
+    //     store.dispatch('User/setMagicScrollToFetch', false);
+    //   }
+    //   // console.log(next);
+    //   return magicScrolls;
+    // }
 
     /**
      * Returns whether user is the owner of this shop
@@ -220,10 +220,10 @@ export default {
           }
 
           // const userCertificates = [];
-          const scrollsData = await fetchAllMagicScrolls(0);
-          state.magicScrollsData = scrollsData;
+          // const scrollsData = await fetchAllMagicScrolls(0);
+          // state.magicScrollsData = scrollsData;
 
-          store.dispatch('User/setMagicScrolls', scrollsData);
+          // store.dispatch('User/setMagicScrolls', scrollsData);
 
           store.dispatch('User/setFetching', false);
           console.log(store.state.User.scrollList);
