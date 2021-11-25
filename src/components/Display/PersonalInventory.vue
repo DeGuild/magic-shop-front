@@ -103,11 +103,26 @@
           </div>
           <button
             class="Button buy"
+            v-if="state.imageSelected.state === 1"
             v-on:click="state.loading ? null : consume()"
             :class="{ disabled: state.buying }"
             :disabled="state.buying"
             v-html="state.consumeButton"
           ></button>
+          <button
+            v-if="state.imageSelected.state === 2"
+            class="Button consumed"
+            :disabled="true"
+          >
+            CONSUMED
+          </button>
+          <button
+            class="Button burned"
+            v-if="state.imageSelected.state === 3"
+            :disabled="true"
+          >
+            BURNED
+          </button>
         </div>
       </div>
     </div>
@@ -121,7 +136,7 @@
         class="text passcode"
         v-model="state.passcode"
         placeholder="secret"
-        type="password"
+        type="text"
       />
       <h1 class="text passcode instruction">
         *Passcode is given by your instructor
@@ -167,7 +182,7 @@ export default defineComponent({
     const web3 = new Web3(Web3.givenProvider || 'ws://localhost:8545');
 
     const state = reactive({
-      consumeButton: 'CONSUME',
+      consumeButton: 'ACTIVATE',
       passcode: null,
       consuming: false,
       showBoth: false,
@@ -736,6 +751,56 @@ input[type='file'] {
         rgba(255, 255, 255, 0) 100%
       ),
       #ffae02;
+    background-blend-mode: soft-light, normal;
+    border-radius: 2vw;
+    &.disabled {
+      background: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0.25) 0%,
+          rgba(255, 255, 255, 0) 100%
+        ),
+        #a7a7a7;
+      cursor: wait;
+    }
+  }
+
+  &.consumed {
+    width: 11.615vw;
+    top: 30vw;
+    left: 20.4vw;
+    cursor: unset;
+
+    background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.25) 0%,
+        rgba(255, 255, 255, 0) 100%
+      ),
+      #0267ff;
+    background-blend-mode: soft-light, normal;
+    border-radius: 2vw;
+    &.disabled {
+      background: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0.25) 0%,
+          rgba(255, 255, 255, 0) 100%
+        ),
+        #a7a7a7;
+      cursor: wait;
+    }
+  }
+
+  &.burned {
+    width: 11.615vw;
+    top: 30vw;
+    left: 20.4vw;
+    cursor: unset;
+
+    background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.25) 0%,
+        rgba(255, 255, 255, 0) 100%
+      ),
+      #000000;
     background-blend-mode: soft-light, normal;
     border-radius: 2vw;
     &.disabled {

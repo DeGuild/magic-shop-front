@@ -181,9 +181,11 @@ export default {
       const magicScrolls = await response.json();
       const managers = await response2.json();
       // console.log(magicScrolls);
-      // console.log(managers);
+      console.log(managers);
+      if (!managers.message) {
+        state.managers = managers;
+      }
       state.scrolls = magicScrolls;
-      state.managers = managers;
       store.dispatch('User/setFetching', false);
     }
 
