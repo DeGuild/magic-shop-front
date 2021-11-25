@@ -9,39 +9,55 @@
         <div>
           <div class="title instruction">Certificate name</div>
         </div>
-        <input class="selector-custom" type="text" />
+        <input
+          class="selector-custom"
+          type="text"
+          v-model="certificate.name"
+          placeholder="Blockchain certificate"
+        />
       </div>
-      <div class="selector-box">
+      <div class="selector-box" v-if="state.scrolls">
         <div>
           <div class="title instruction">Scroll to burn</div>
         </div>
-        <select class="selector-custom">
-          <option>wtf</option>
+        <select v-model="certificate.scrollType" class="selector-custom">
+          <option :value="i.tokenId" v-for="i in state.scrolls" :key="i">
+            {{ i.name }}
+          </option>
         </select>
       </div>
-      <div class="selector-box">
+      <div class="selector-box" v-if="state.managers">
         <div>
           <div class="title instruction">Choose Certifcate Manager</div>
         </div>
-        <select class="selector-custom">
-          <option>wtf</option>
+        <select v-model="certificate.address" class="selector-custom">
+          <option :value="i" v-for="i in state.managers" :key="i">
+            {{ i }}
+          </option>
         </select>
       </div>
 
       <div class="selector-box">
         <div>
           <div class="title instruction">
-            Add certificate manager to the shop
+            Add certificate manager (press enter)
           </div>
         </div>
-        <input class="selector-custom" type="text" />
+        <input
+          class="selector-custom"
+          type="text"
+          v-model="certificate.approve"
+          placeholder="0xabc..."
+          @keydown.enter="state.fetching ? null : approveCertificateManager()"
+        />
       </div>
 
       <div class="explaination">
         <h2>Instructions</h2>
         <div>
           <div class="explaination-text first">
-            1. Define your certificate name for students, then choose a scroll to burn
+            1. Define your certificate name for students, then choose a scroll
+            to burn
           </div>
           <div class="explaination-text second">
             2. Choose a certificate manager or add a new one
@@ -52,7 +68,7 @@
     <span class="panel right">
       <div><h1 class="title text">Preview certificate</h1></div>
 
-      <img src="@/assets/no-url.jpg" />
+      <img class="upload-image" :src="state.imagePreview" />
 
       <div class="upload-pos">
         <div class="custom-file-upload">
@@ -62,19 +78,30 @@
           </label>
         </div>
       </div>
-      <div class="preview" v-for="i in 4" :key="i">
+      <div class="preview" v-for="i in previewHTML" :key="i">
         <div>
           <span class="preview-text">{{ i }}:</span
-          ><span class="preview-text data">{{ i }}</span>
+          ><span class="preview-text data">{{ certificate[i] }}</span>
         </div>
       </div>
 
-      <div class="btn upload" @click="getJSON()">ADD CERTIFICATE</div>
+      <button
+        class="btn upload"
+        @click="state.fetching ? null : addSkill()"
+        :disabled="
+          !certificate.name ||
+          !certificate.scrollType ||
+          !certificate.address ||
+          !state.imageName
+        "
+      >
+        ADD CERTIFICATE
+      </button>
     </span>
   </div>
   <input
     id="scroll-pic-upload"
-    @change="previewCSV($event)"
+    @change="previewImage($event)"
     type="file"
     accept="image/jpeg"
   />
@@ -86,10 +113,17 @@
 import { useStore } from 'vuex';
 // import { useRoute } from 'vue-router';
 
-import { reactive, computed } from 'vue';
+import { reactive, computed, onBeforeMount } from 'vue';
+
+import {
+  getStorage,
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+} from 'firebase/storage';
+import Web3Token from 'web3-token';
 
 const Web3 = require('web3');
-const { parse } = require('json2csv');
 
 /**
  * Using relative path, just clone the git beside this project directory and compile to run
@@ -98,256 +132,194 @@ const { parse } = require('json2csv');
 require('dotenv').config();
 
 const shopAddress = process.env.VUE_APP_SHOP_ADDRESS;
-const dgcAddress = process.env.VUE_APP_DGC_ADDRESS;
-const dgcABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/Tokens/DeGuildCoinERC20.sol/DeGuildCoinERC20.json').abi;
+// const dgcAddress = process.env.VUE_APP_DGC_ADDRESS;
+// const dgcABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/Tokens/
+// DeGuildCoinERC20.sol/DeGuildCoinERC20.json').abi;
+const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/V2/IMagicScrolls+.sol/IMagicScrollsPlus.json').abi;
+// const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/a
+// rtifacts/contracts/SkillCertificates/V2/ISkillCertificate+.sol/ISkillCertificatePlus.json').abi;
+
+const noImg = require('@/assets/no-url.jpg');
 
 export default {
   name: 'CertficateManager',
   setup() {
-    const obj = [
-      {
-        album: 'The White Stripes',
-        year: 1999,
-        US_peak_chart_post: '-',
-      },
-      {
-        album: 'De Stijl',
-        year: 2000,
-        US_peak_chart_post: '-',
-      },
-      {
-        album: 'White Blood Cells',
-        year: 2001,
-        US_peak_chart_post: 61,
-      },
-      {
-        album: 'Elephant',
-        year: 2003,
-        US_peak_chart_post: 6,
-      },
-      {
-        album: 'Get Behind Me Satan',
-        year: 2005,
-        US_peak_chart_post: 3,
-      },
-      {
-        album: 'Icky Thump',
-        year: 2007,
-        US_peak_chart_post: 2,
-      },
-      {
-        album: 'Under Great White Northern Lights',
-        year: 2010,
-        US_peak_chart_post: 11,
-      },
-      {
-        album: 'Live in Mississippi',
-        year: 2011,
-        US_peak_chart_post: '-',
-      },
-      {
-        album: 'Live at the Gold Dollar',
-        year: 2012,
-        US_peak_chart_post: '-',
-      },
-      {
-        album: 'Nine Miles from the White City',
-        year: 2013,
-        US_peak_chart_post: '-',
-      },
-    ];
     const store = useStore();
     // const route = useRoute();
 
     const user = computed(() => store.state.User.user);
+    const previewHTML = ['name', 'scrollType', 'address'];
 
     const state = reactive({
-      primary: 'APPROVE',
-      network: '',
-      magicScrollsData: [],
-      csvFile: null,
+      imageFile: null,
+      imagePreview: noImg,
+      imageName: null,
+      fetching: computed(() => store.state.User.fetching),
+      scrolls: null,
+      managers: null,
+    });
+    const certificate = reactive({
+      name: null,
+      scrollType: null,
+      address: null,
+      approve: null,
     });
     const web3 = new Web3(Web3.givenProvider || 'ws://localhost:8545');
 
-    /**
-     * Returns whether user has approved this shop to spend their DGC
-     *
-     * @param {address} address ethereum address
-     * @return {bool} approval.
-     */
-    async function hasApproval(address) {
-      const deguildCoin = new web3.eth.Contract(dgcABI, dgcAddress);
-      const realAddress = web3.utils.toChecksumAddress(address);
-      try {
-        const balance = await deguildCoin.methods.balanceOf(realAddress).call();
-        const caller = await deguildCoin.methods
-          .allowance(realAddress, shopAddress)
-          .call();
-        return caller <= balance && caller > 0;
-      } catch (error) {
-        return false;
-      }
-    }
+    async function fetchSetup() {
+      store.dispatch('User/setFetching', true);
 
-    /**
-     * Returns whether user is the owner of this shop
-     *
-     * @param {address} address ethereum address
-     * @return {bool} ownership.
-     */
-    async function approve() {
-      state.primary = "<i class='fas fa-spinner fa-spin'></i>";
-
-      const deguildCoin = new web3.eth.Contract(dgcABI, dgcAddress);
-      const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
-      try {
-        const balance = await deguildCoin.methods.balanceOf(realAddress).call();
-        const caller = await deguildCoin.methods
-          .approve(shopAddress, balance)
-          .send({ from: realAddress });
-        console.log(caller);
-        const approval = await hasApproval(realAddress);
-        store.dispatch('User/setApproval', approval);
-
-        return approval;
-      } catch (error) {
-        return false;
-      }
-    }
-
-    async function getCSV() {
-      const fields = ['album', 'year', 'US_peak_chart_post'];
-      const opts = { fields };
-
-      try {
-        const csvText = parse(obj, opts);
-        console.log(csvText);
-        const element = document.createElement('a');
-        element.setAttribute(
-          'href',
-          `data:text/csv;charset=utf-8,${encodeURIComponent(csvText)}`,
-        );
-        element.setAttribute('download', 'csvtest');
-
-        element.style.display = 'none';
-        document.body.appendChild(element);
-
-        element.click();
-
-        document.body.removeChild(element);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    function CSVToArray(strData, _strDelimiter) {
-      // Check to see if the delimiter is defined. If not,
-      // then default to comma.
-      const strDelimiter = _strDelimiter || ',';
-
-      // Create a regular expression to parse the CSV values.
-      const objPattern = new RegExp(
-        // Delimiters.
-        `(\\${strDelimiter}|\\r?\\n|\\r|^)`
-          // Quoted fields.
-          + '(?:"([^"]*(?:""[^"]*)*)"|'
-          // Standard fields.
-          + `([^"\\${strDelimiter}\\r\\n]*))`,
-        'gi',
+      const response = await fetch(
+        `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/${shopAddress}`,
+        { mode: 'cors' },
+      );
+      const response2 = await fetch(
+        `https://us-central1-deguild-2021.cloudfunctions.net/app/manager/${shopAddress}`,
+        { mode: 'cors' },
       );
 
-      // Create an array to hold our data. Give the array
-      // a default empty first row.
-      const arrData = [[]];
-
-      // Create an array to hold our individual pattern
-      // matching groups.
-      let arrMatches = null;
-
-      // Keep looping over the regular expression matches
-      // until we can no longer find a match.
-      // eslint-disable-next-line no-cond-assign
-      while ((arrMatches = objPattern.exec(strData))) {
-        // Get the delimiter that was found.
-        const strMatchedDelimiter = arrMatches[1];
-
-        // Check to see if the given delimiter has a length
-        // (is not the start of string) and if it matches
-        // field delimiter. If id does not, then we know
-        // that this delimiter is a row delimiter.
-        if (
-          strMatchedDelimiter.length
-          && strMatchedDelimiter !== strDelimiter
-        ) {
-          // Since we have reached a new row of data,
-          // add an empty row to our data array.
-          arrData.push([]);
-        }
-
-        // Now that we have our delimiter out of the way,
-        // let's check to see which kind of value we
-        // captured (quoted or unquoted).
-        let strMatchedValue;
-        if (arrMatches[2]) {
-          // We found a quoted value. When we capture
-          // this value, unescape any double quotes.
-          strMatchedValue = arrMatches[2].replace(new RegExp('""', 'g'), '"');
-        } else {
-          // We found a non-quoted value.
-          // eslint-disable-next-line prefer-destructuring
-          strMatchedValue = arrMatches[3];
-        }
-
-        // Now that we have our value string, let's add
-        // it to the data array.
-        arrData[arrData.length - 1].push(strMatchedValue);
-      }
-
-      // Return the parsed data.
-      return arrData;
+      const magicScrolls = await response.json();
+      const managers = await response2.json();
+      // console.log(magicScrolls);
+      // console.log(managers);
+      state.scrolls = magicScrolls;
+      state.managers = managers;
+      store.dispatch('User/setFetching', false);
     }
 
-    async function getJSON() {
-      // console.log(jsonArray);
-      const fr = new FileReader();
-      fr.onload = () => {
-        console.log(fr.result);
-
-        try {
-          const csvArray = CSVToArray(fr.result);
-          console.log(csvArray);
-          const jsonObjHeader = csvArray.slice(0, 1);
-          const jsonObj = csvArray.slice(1).map((row) => {
-            const objForJSON = {};
-            for (let index = 0; index < jsonObjHeader.length; index += 1) {
-              objForJSON[jsonObjHeader[index]] = row[index];
-            }
-            return obj;
-          });
-          console.log(jsonObj);
-        } catch (err) {
-          console.error(err);
-        }
-      };
-
-      fr.readAsText(state.csvFile);
-    }
-
-    function previewCSV(event) {
+    function previewImage(event) {
       // console.log('File changed!');
       const file = event.target.files[0];
       console.log(file);
-      // state.picture = previewing;
-      state.csvFile = file;
+      state.imagePreview = URL.createObjectURL(file);
+      state.imageFile = file;
+      state.imageName = file.name;
     }
+
+    async function approveCertificateManager() {
+      const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
+      const transaction = await magicShop.methods
+        .setCertificateManager(certificate.approve, true)
+        .send({ from: user.value });
+      console.log(transaction);
+    }
+    async function addSkill() {
+      store.dispatch('User/setFetching', true);
+
+      const response3 = await fetch(
+        `https://us-central1-deguild-2021.cloudfunctions.net/app/allCertificates/${certificate.address}`,
+        { mode: 'cors' },
+      );
+
+      const allcerts = await response3.json();
+      const count = allcerts.length;
+
+      try {
+        const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
+        // generating a token with 1 day of expiration time
+        const token = await Web3Token.sign(
+          (msg) => web3.eth.personal.sign(msg, realAddress),
+          '1d',
+        );
+        console.log(token);
+        const storage = getStorage();
+        const storageRef = ref(
+          storage,
+          `images/${certificate.address}/${count.length}`,
+        );
+
+        // const certificateManager = new web3.eth.Contract(
+        //   skillCertificateABI,
+        //   certificate.address,
+        // );
+
+        const uploadTask = uploadBytesResumable(storageRef, state.imageFile);
+        // Register three observers:
+        // 1. 'state_changed' observer, called any time the state changes
+        // 2. Error observer, called on failure
+        // 3. Completion observer, called on successful completion
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            // Observe state change events such as progress, pause, and resume
+            // console.log(`Upload is ${progress}% done`);
+            // eslint-disable-next-line default-case
+            switch (snapshot.state) {
+              case 'paused':
+                // console.log('Upload is paused');
+                break;
+              case 'running':
+                // console.log('Upload is running');
+                break;
+            }
+          },
+          (error) => {
+            // Handle unsuccessful uploads
+            console.error(error.message);
+            store.dispatch('User/setFetching', false);
+          },
+          async () => {
+            getDownloadURL(uploadTask.snapshot.ref).then(
+              async (downloadURL) => {
+                try {
+                  // const transaction = await certificateManager.methods
+                  //   .addCertificate(certificate.scrollType)
+                  //   .send({ from: realAddress });
+                  // console.log(transaction);
+                  console.log('File available at', downloadURL);
+                  console.log({
+                    url: downloadURL,
+                    address: certificate.address,
+                    tokenId: count.toString(),
+                    title: certificate.name,
+                  });
+                  const requestOptions = {
+                    method: 'POST',
+                    headers: {
+                      Authorization: token,
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      url: downloadURL,
+                      address: certificate.address,
+                      tokenId: count.toString(),
+                      title: certificate.name,
+                    }),
+                  };
+                  await fetch(
+                    'https://us-central1-deguild-2021.cloudfunctions.net/certificate/addCertificate',
+                    requestOptions,
+                  );
+                  store.dispatch('User/setFetching', false);
+
+                  return null;
+                } catch (error) {
+                  store.dispatch('User/setFetching', false);
+
+                  return null;
+                }
+              },
+            );
+          },
+        );
+      } catch (error) {
+        console.log(error);
+        store.dispatch('User/setFetching', false);
+      }
+      return false;
+    }
+    onBeforeMount(async () => {
+      await fetchSetup();
+    });
 
     return {
       state,
+      certificate,
       user,
-      approve,
-      getCSV,
-      getJSON,
-      previewCSV,
+      previewHTML,
+      addSkill,
+      previewImage,
+      approveCertificateManager,
     };
   },
 };
@@ -366,6 +338,10 @@ input[type='file'] {
   justify-content: center;
   align-items: center;
   position: relative;
+}
+.upload-image {
+  height: 10vw;
+  width: 10vw;
 }
 .upload-preview {
   display: inline-block;
@@ -511,7 +487,7 @@ input[type='file'] {
   left: 0vw;
   &.data {
     display: inline-block;
-    left: 6vw;
+    left: 7vw;
   }
 }
 .explaination {

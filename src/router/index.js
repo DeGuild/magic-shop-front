@@ -1,7 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import store from '../store';
 
-const ConnectWallet = () => import('../views/MagicShop.vue');
+const Home = () => import('../views/MagicShop.vue');
+const Inventory = () => import('../views/Inventory.vue');
 const AdminPage = () => import('../views/AdminPage.vue');
 const CertificatePage = () => import('../views/CertificatePage.vue');
 
@@ -9,7 +10,12 @@ const routes = [
   {
     path: '/',
     name: 'Home',
-    component: ConnectWallet,
+    component: Home,
+  },
+  {
+    path: '/inventory',
+    name: 'Inventory',
+    component: Inventory,
   },
   {
     path: '/admin',

@@ -302,11 +302,11 @@ export default {
   justify-content: center;
   align-items: center;
 
-  position: absolute;
+  position: fixed;
   width: 10vw;
   height: 3vw;
   left: 88vw;
-  top: 20px;
+  top: 0.7vw;
 
   /* standart theme/error */
   background: #ff5252;
