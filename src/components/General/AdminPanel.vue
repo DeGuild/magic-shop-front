@@ -14,11 +14,20 @@
       </div>
       <div class="selector-box">
         <div>
-          <div class="title instruction">Round</div>
+          <div class="title instruction">Choose Round</div>
         </div>
         <select class="selector-custom">
           <option>wtf</option>
         </select>
+      </div>
+      <div>
+        <div class="title instruction">Add Round</div>
+
+        <input
+          type="text"
+          class="selector-custom"
+          placeholder="Put in the passcode to add round"
+        />
       </div>
       <div class="explaination">
         <h2>Instructions</h2>
@@ -455,7 +464,7 @@ input[type='file'] {
 
   &.download {
     left: 11vw;
-    bottom: 17vw;
+    bottom: 14vw;
   }
   &.upload {
     right: 10vw;
@@ -514,7 +523,7 @@ input[type='file'] {
   background: grey;
   width: 43vw;
   left: 2vw;
-  height: 13vw;
+  height: 11vw;
   bottom: 2vw;
   font-size: 1.1vw;
   font-family: Poppins;

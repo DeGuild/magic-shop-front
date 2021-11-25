@@ -1,7 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import ConnectWallet from '../views/MagicShop.vue';
-import AdminPage from '../views/AdminPage.vue';
-import CertificatePage from '../views/CertificatePage.vue';
+import store from '../store';
+
+const ConnectWallet = () => import('../views/MagicShop.vue');
+const AdminPage = () => import('../views/AdminPage.vue');
+const CertificatePage = () => import('../views/CertificatePage.vue');
 
 const routes = [
   {
@@ -13,11 +15,21 @@ const routes = [
     path: '/admin',
     name: 'admin',
     component: AdminPage,
+    beforeEnter() {
+      if (!store.state.User.owner) {
+        store.dispatch('User/reset');
+      }
+    },
   },
   {
     path: '/manager',
     name: 'manager',
     component: CertificatePage,
+    beforeEnter() {
+      if (!store.state.User.owner) {
+        store.dispatch('User/reset');
+      }
+    },
   },
   {
     path: '/no-provider',
