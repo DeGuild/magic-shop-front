@@ -4,29 +4,39 @@
   <div>
     <span class="panel left">
       <div><h1 class="title text">Download Scroll Transactions</h1></div>
-      <div class="selector-box">
+      <div class="selector-box" v-if="state.courses">
         <div>
           <div class="title instruction">Courses</div>
         </div>
-        <select class="selector-custom">
-          <option v-for="i in 100" :key="i">wtf</option>
+        <select
+          v-model="downloading.course"
+          @change="getRound()"
+          class="selector-custom"
+        >
+          <option :value="i" v-for="i in state.courses" :key="i">
+            {{ i.title }}
+          </option>
         </select>
       </div>
-      <div class="selector-box">
+      <div class="selector-box" v-if="downloading.course && state.rounds">
         <div>
           <div class="title instruction">Choose Round</div>
         </div>
-        <select class="selector-custom">
-          <option>wtf</option>
+        <select v-model="downloading.round" class="selector-custom">
+          <option :value="i" v-for="i in state.rounds" :key="i">
+            {{ i.coursePassword }}
+          </option>
         </select>
       </div>
-      <div>
-        <div class="title instruction">Add Round</div>
+      <div v-if="downloading.course">
+        <div class="title instruction">Add Round (press enter)</div>
 
         <input
           type="text"
           class="selector-custom"
           placeholder="Put in the passcode to add round"
+          v-model="state.newRound"
+          @keydown.enter="state.fetching ? null : addRoundToCourse()"
         />
       </div>
       <div class="explaination">
@@ -51,19 +61,21 @@
     </span>
     <span class="panel right">
       <div><h1 class="title text">Preview certificate</h1></div>
-
-      <img src="@/assets/no-url.jpg" />
-      <div class="preview" v-for="i in 4" :key="i">
-        <div>
-          <span class="preview-text">{{ i }}:</span
-          ><span class="preview-text data">{{ i }}</span>
+      <div v-if="downloading.course">
+        <img class="upload-image" :src="downloading.course.url" />
+        <div class="preview" v-for="i in previewHeader" :key="i">
+          <div>
+            <span class="preview-text">{{ i }}:</span
+            ><span class="preview-text data">{{ downloading.course[i] }}</span>
+          </div>
         </div>
       </div>
+
       <div class="upload-pos">
         <div class="custom-file-upload">
           <label for="scroll-pic-upload" class="custom-file-upload button">
             <span class="fas fa-paperclip"></span>
-            <span class="upload-preview"> csv upload</span>
+            <span class="upload-preview"> {{ state.csvName }}</span>
           </label>
         </div>
       </div>
@@ -84,10 +96,10 @@
 import { useStore } from 'vuex';
 // import { useRoute } from 'vue-router';
 
-import { reactive, computed } from 'vue';
+import { reactive, computed, onBeforeMount } from 'vue';
+import Web3Token from 'web3-token';
 
 const Web3 = require('web3');
-const { parse } = require('json2csv');
 
 /**
  * Using relative path, just clone the git beside this project directory and compile to run
@@ -96,8 +108,7 @@ const { parse } = require('json2csv');
 require('dotenv').config();
 
 const shopAddress = process.env.VUE_APP_SHOP_ADDRESS;
-const dgcAddress = process.env.VUE_APP_DGC_ADDRESS;
-const dgcABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/Tokens/DeGuildCoinERC20.sol/DeGuildCoinERC20.json').abi;
+const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/V2/ISkillCertificate+.sol/ISkillCertificatePlus.json');
 
 export default {
   name: 'AdminPanel',
@@ -159,82 +170,149 @@ export default {
 
     const user = computed(() => store.state.User.user);
 
+    const previewHeader = ['title', 'address', 'tokenId'];
+
     const state = reactive({
-      primary: 'APPROVE',
-      network: '',
-      magicScrollsData: [],
+      fetching: computed(() => store.state.User.fetching),
+      courses: null,
+      rounds: null,
+      newRound: null,
       csvFile: null,
+      csvName: 'Upload CSV file',
+    });
+
+    const downloading = reactive({
+      course: null,
+      round: null,
     });
     const web3 = new Web3(Web3.givenProvider || 'ws://localhost:8545');
 
-    /**
-     * Returns whether user has approved this shop to spend their DGC
-     *
-     * @param {address} address ethereum address
-     * @return {bool} approval.
-     */
-    async function hasApproval(address) {
-      const deguildCoin = new web3.eth.Contract(dgcABI, dgcAddress);
-      const realAddress = web3.utils.toChecksumAddress(address);
+    async function fetchSetup() {
+      store.dispatch('User/setFetching', true);
+
+      const response = await fetch(
+        'https://us-central1-deguild-2021.cloudfunctions.net/app/allCertificates',
+        { mode: 'cors' },
+      );
+      const responseNew = await fetch(
+        'https://us-central1-deguild-2021.cloudfunctions.net/app/courses',
+        { mode: 'cors' },
+      );
+
+      const skills = await response.json();
+      const skillsWithType = await responseNew.json();
+      state.courses = [].concat.apply(...skills);
+      console.log(skillsWithType);
+
+      store.dispatch('User/setFetching', false);
+    }
+
+    async function getRound() {
+      store.dispatch('User/setFetching', true);
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       try {
-        const balance = await deguildCoin.methods.balanceOf(realAddress).call();
-        const caller = await deguildCoin.methods
-          .allowance(realAddress, shopAddress)
-          .call();
-        return caller <= balance && caller > 0;
-      } catch (error) {
-        return false;
+        const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
+        // generating a token with 1 day of expiration time
+        const token = await Web3Token.sign(
+          (msg) => web3.eth.personal.sign(msg, realAddress),
+          '1d',
+        );
+        console.log(token);
+        console.log(downloading.course);
+
+        const requestOptions = {
+          method: 'GET',
+          headers: {
+            Authorization: token,
+          },
+        };
+        const response = await fetch(
+          `https://us-central1-deguild-2021.cloudfunctions.net/shop/round/${shopAddress}/${downloading.course.address}/${downloading.course.tokenId}`,
+          requestOptions,
+        );
+
+        const rounds = await response.json();
+        console.log(rounds);
+        state.rounds = rounds;
+
+        store.dispatch('User/setFetching', false);
+      } catch {
+        store.dispatch('User/setFetching', false);
       }
     }
 
-    /**
-     * Returns whether user is the owner of this shop
-     *
-     * @param {address} address ethereum address
-     * @return {bool} ownership.
-     */
-    async function approve() {
-      state.primary = "<i class='fas fa-spinner fa-spin'></i>";
-
-      const deguildCoin = new web3.eth.Contract(dgcABI, dgcAddress);
+    async function addRoundToCourse() {
+      store.dispatch('User/setFetching', true);
       const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
-      try {
-        const balance = await deguildCoin.methods.balanceOf(realAddress).call();
-        const caller = await deguildCoin.methods
-          .approve(shopAddress, balance)
-          .send({ from: realAddress });
-        console.log(caller);
-        const approval = await hasApproval(realAddress);
-        store.dispatch('User/setApproval', approval);
+      // generating a token with 1 day of expiration time
+      const token = await Web3Token.sign(
+        (msg) => web3.eth.personal.sign(msg, realAddress),
+        '1d',
+      );
+      console.log(token);
 
-        return approval;
-      } catch (error) {
-        return false;
-      }
+      const requestOptions = {
+        method: 'POST',
+        headers: {
+          Authorization: token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          addressM: shopAddress,
+          addressC: downloading.course.address,
+          tokenId: downloading.course.tokenId,
+          coursePassword: state.newRound,
+        }),
+      };
+      const response = await fetch(
+        'https://us-central1-deguild-2021.cloudfunctions.net/shop/round',
+        requestOptions,
+      );
+
+      const rounds = await response.json();
+      console.log(rounds);
+
+      store.dispatch('User/setFetching', false);
+    }
+
+    async function batchMint() {
+      const manager = new web3.eth.Contract(skillCertificateABI, shopAddress);
+      console.log(manager);
     }
 
     async function getCSV() {
-      const fields = ['album', 'year', 'US_peak_chart_post'];
-      const opts = { fields };
-
       try {
-        const csvText = parse(obj, opts);
-        console.log(csvText);
-        const element = document.createElement('a');
-        element.setAttribute(
-          'href',
-          `data:text/csv;charset=utf-8,${encodeURIComponent(csvText)}`,
+        store.dispatch('User/setFetching', true);
+        const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
+        // generating a token with 1 day of expiration time
+        const token = await Web3Token.sign(
+          (msg) => web3.eth.personal.sign(msg, realAddress),
+          '1d',
         );
-        element.setAttribute('download', 'csvtest');
+        console.log(token);
+        const requestOptions = {
+          method: 'GET',
+          headers: {
+            Authorization: token,
+            'content-type': 'text/csv;charset=UTF-8',
+          },
+        };
 
-        element.style.display = 'none';
-        document.body.appendChild(element);
-
-        element.click();
-
-        document.body.removeChild(element);
+        const response = await fetch(
+          `https://us-central1-deguild-2021.cloudfunctions.net/shop/csv/${shopAddress}/0/ilikesalmon`,
+          requestOptions,
+        );
+        // const response = await fetch(
+        //   `https://us-central1-deguild-2021.cloudfunctions.net/shop/csv/${shopAddress}/${shopAddress}/${downloading.round.coursePassword}`,
+        //   requestOptions,
+        // );
+        // const data = await response.text();
+        console.log(response);
+        store.dispatch('User/setFetching', false);
       } catch (err) {
         console.error(err);
+        store.dispatch('User/setFetching', false);
       }
     }
 
@@ -337,12 +415,20 @@ export default {
       console.log(file);
       // state.picture = previewing;
       state.csvFile = file;
+      state.csvName = file.name;
     }
+    onBeforeMount(async () => {
+      await fetchSetup();
+    });
 
     return {
       state,
+      downloading,
       user,
-      approve,
+      previewHeader,
+      addRoundToCourse,
+      getRound,
+      batchMint,
       getCSV,
       getJSON,
       previewCSV,
@@ -352,6 +438,10 @@ export default {
 </script>
 
 <style scoped lang="scss">
+.upload-image {
+  height: 10vw;
+  width: 10vw;
+}
 input[type='file'] {
   display: none;
 }

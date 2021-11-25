@@ -132,12 +132,8 @@ const Web3 = require('web3');
 require('dotenv').config();
 
 const shopAddress = process.env.VUE_APP_SHOP_ADDRESS;
-// const dgcAddress = process.env.VUE_APP_DGC_ADDRESS;
-// const dgcABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/Tokens/
-// DeGuildCoinERC20.sol/DeGuildCoinERC20.json').abi;
 const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/V2/IMagicScrolls+.sol/IMagicScrollsPlus.json').abi;
-// const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/a
-// rtifacts/contracts/SkillCertificates/V2/ISkillCertificate+.sol/ISkillCertificatePlus.json').abi;
+const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/V2/ISkillCertificate+.sol/ISkillCertificatePlus.json').abi;
 
 const noImg = require('@/assets/no-url.jpg');
 
@@ -230,10 +226,10 @@ export default {
           `images/${certificate.address}/${count.length}`,
         );
 
-        // const certificateManager = new web3.eth.Contract(
-        //   skillCertificateABI,
-        //   certificate.address,
-        // );
+        const certificateManager = new web3.eth.Contract(
+          skillCertificateABI,
+          certificate.address,
+        );
 
         const uploadTask = uploadBytesResumable(storageRef, state.imageFile);
         // Register three observers:
@@ -264,10 +260,10 @@ export default {
             getDownloadURL(uploadTask.snapshot.ref).then(
               async (downloadURL) => {
                 try {
-                  // const transaction = await certificateManager.methods
-                  //   .addCertificate(certificate.scrollType)
-                  //   .send({ from: realAddress });
-                  // console.log(transaction);
+                  const transaction = await certificateManager.methods
+                    .addCertificate(certificate.scrollType)
+                    .send({ from: realAddress });
+                  console.log(transaction);
                   console.log('File available at', downloadURL);
                   console.log({
                     url: downloadURL,
