@@ -57,7 +57,13 @@
         </div>
       </div>
 
-      <div class="btn download" @click="getCSV()">Download CSV</div>
+      <button
+        class="btn download"
+        @click="getCSV()"
+        :disabled="!downloading.course || !downloading.round"
+      >
+        Download CSV
+      </button>
     </span>
     <span class="panel right">
       <div><h1 class="title text">Preview certificate</h1></div>
@@ -79,7 +85,13 @@
           </label>
         </div>
       </div>
-      <div class="btn upload" @click="getJSON()">BATCH MINT</div>
+      <button
+        class="btn upload"
+        @click="batchMint()"
+        :disabled="!downloading.course || !state.csvFile"
+      >
+        BATCH MINT
+      </button>
     </span>
   </div>
   <input
@@ -108,63 +120,11 @@ const Web3 = require('web3');
 require('dotenv').config();
 
 const shopAddress = process.env.VUE_APP_SHOP_ADDRESS;
-const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/V2/ISkillCertificate+.sol/ISkillCertificatePlus.json');
+const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/V2/ISkillCertificate+.sol/ISkillCertificatePlus.json').abi;
 
 export default {
   name: 'AdminPanel',
   setup() {
-    const obj = [
-      {
-        album: 'The White Stripes',
-        year: 1999,
-        US_peak_chart_post: '-',
-      },
-      {
-        album: 'De Stijl',
-        year: 2000,
-        US_peak_chart_post: '-',
-      },
-      {
-        album: 'White Blood Cells',
-        year: 2001,
-        US_peak_chart_post: 61,
-      },
-      {
-        album: 'Elephant',
-        year: 2003,
-        US_peak_chart_post: 6,
-      },
-      {
-        album: 'Get Behind Me Satan',
-        year: 2005,
-        US_peak_chart_post: 3,
-      },
-      {
-        album: 'Icky Thump',
-        year: 2007,
-        US_peak_chart_post: 2,
-      },
-      {
-        album: 'Under Great White Northern Lights',
-        year: 2010,
-        US_peak_chart_post: 11,
-      },
-      {
-        album: 'Live in Mississippi',
-        year: 2011,
-        US_peak_chart_post: '-',
-      },
-      {
-        album: 'Live at the Gold Dollar',
-        year: 2012,
-        US_peak_chart_post: '-',
-      },
-      {
-        album: 'Nine Miles from the White City',
-        year: 2013,
-        US_peak_chart_post: '-',
-      },
-    ];
     const store = useStore();
     // const route = useRoute();
 
@@ -190,18 +150,13 @@ export default {
     async function fetchSetup() {
       store.dispatch('User/setFetching', true);
 
-      const response = await fetch(
-        'https://us-central1-deguild-2021.cloudfunctions.net/app/allCertificates',
-        { mode: 'cors' },
-      );
       const responseNew = await fetch(
         'https://us-central1-deguild-2021.cloudfunctions.net/app/courses',
         { mode: 'cors' },
       );
 
-      const skills = await response.json();
       const skillsWithType = await responseNew.json();
-      state.courses = [].concat.apply(...skills);
+      state.courses = skillsWithType;
       console.log(skillsWithType);
 
       store.dispatch('User/setFetching', false);
@@ -276,11 +231,6 @@ export default {
       store.dispatch('User/setFetching', false);
     }
 
-    async function batchMint() {
-      const manager = new web3.eth.Contract(skillCertificateABI, shopAddress);
-      console.log(manager);
-    }
-
     async function getCSV() {
       try {
         store.dispatch('User/setFetching', true);
@@ -300,15 +250,20 @@ export default {
         };
 
         const response = await fetch(
-          `https://us-central1-deguild-2021.cloudfunctions.net/shop/csv/${shopAddress}/0/ilikesalmon`,
+          `https://us-central1-deguild-2021.cloudfunctions.net/shop/csv/${shopAddress}/${downloading.course.typeAccepted}/${downloading.round.coursePassword}`,
           requestOptions,
         );
-        // const response = await fetch(
-        //   `https://us-central1-deguild-2021.cloudfunctions.net/shop/csv/${shopAddress}/${shopAddress}/${downloading.round.coursePassword}`,
-        //   requestOptions,
-        // );
-        // const data = await response.text();
+        const data = await response.text();
         console.log(response);
+        const downloadLink = document.createElement('a');
+        const blob = new Blob(['\ufeff', data]);
+        const url = URL.createObjectURL(blob);
+        downloadLink.href = url;
+        downloadLink.download = `${shopAddress}-${downloading.course.tokenType}-${downloading.round.coursePassword}.csv`;
+
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
         store.dispatch('User/setFetching', false);
       } catch (err) {
         console.error(err);
@@ -383,24 +338,38 @@ export default {
       return arrData;
     }
 
-    async function getJSON() {
-      // console.log(jsonArray);
+    async function batchMint() {
       const fr = new FileReader();
-      fr.onload = () => {
-        console.log(fr.result);
-
+      fr.onload = async () => {
         try {
           const csvArray = CSVToArray(fr.result);
           console.log(csvArray);
-          const jsonObjHeader = csvArray.slice(0, 1);
-          const jsonObj = csvArray.slice(1).map((row) => {
+          const jsonObjHeader = [].concat.apply(...csvArray.slice(0, 1));
+          console.log(jsonObjHeader);
+
+          const jsonArr = csvArray.slice(1).map((row) => {
             const objForJSON = {};
+            // console.log(row);
             for (let index = 0; index < jsonObjHeader.length; index += 1) {
               objForJSON[jsonObjHeader[index]] = row[index];
+              // console.log(objForJSON[jsonObjHeader[index]]);
             }
-            return obj;
+            // console.log(objForJSON);
+            return objForJSON;
           });
-          console.log(jsonObj);
+          const arrayUser = jsonArr.map((ele) => ele.address);
+          const arrayToken = jsonArr.map((ele) => ele.tokenId);
+          const typeId = downloading.course.tokenId;
+          const manager = new web3.eth.Contract(
+            skillCertificateABI,
+            downloading.course.address,
+          );
+          console.log(arrayUser, arrayToken, typeId.toString());
+
+          const transaction = await manager.methods
+            .batchMint(arrayUser, arrayToken, typeId.toString())
+            .send({ from: store.state.User.user });
+          console.log(transaction);
         } catch (err) {
           console.error(err);
         }
@@ -430,7 +399,6 @@ export default {
       getRound,
       batchMint,
       getCSV,
-      getJSON,
       previewCSV,
     };
   },
