@@ -1,5 +1,5 @@
 <template>
-  <div class="selection" v-bind:class="{ owner: !owner }">
+  <div class="selection">
     <div class="background"></div>
     <div v-for="imageIndex in 8" :key="imageIndex">
       <div
@@ -40,13 +40,6 @@
         ></div>
       </div>
     </div>
-    <button
-      class="Button addScroll"
-      v-on:click="state.loading ? null : addScrollToggle()"
-      v-if="owner && !state.addScroll"
-    >
-      Add Scroll
-    </button>
     <button
       class="Button addScroll cancel"
       v-if="state.addScroll"
@@ -96,7 +89,7 @@
     <div class="background item-box">
       <div class="background current-item-frame" />
       <div v-if="state.imageSelected">
-        <div v-if="state.imageSelected.isPurchasable">
+        <div>
           <div class="image selected">
             <img
               class="image selected display"
@@ -117,32 +110,11 @@
           ></button>
           <div class="text price">{{ state.imageSelected.price }} DGT</div>
         </div>
-        <div v-if="!state.imageSelected.isPurchasable">
-          <div class="image selected">
-            <img
-              class="image selected display"
-              :src="state.imageSelected.url"
-            />
-          </div>
-          <div class="text">{{ state.imageSelected.name }}</div>
-          <div class="text own">Owned: {{ state.own }}</div>
-          <div class="text description">
-            {{ state.imageSelected.description }}
-          </div>
-          <div class="Button inaccessible">INACCESSIBLE</div>
-          <button
-            class="Button info"
-            v-on:click="state.loading ? null : moreInfo()"
-          >
-            MORE INFO
-          </button>
-          <div class="text price">{{ state.imageSelected.price }} DGT</div>
-        </div>
       </div>
     </div>
   </div>
 
-  <!-- For adding -->
+  <!-- For consuming -->
   <div class="selection item" v-if="state.addScroll">
     <div class="background item-box">
       <div class="background current-item-frame" />
@@ -211,49 +183,6 @@
       </button>
     </div>
   </div>
-  <div class="selection item" v-if="state.nextPage && state.addScroll">
-    <div class="background item-box">
-      <input
-        class="text course prereq"
-        v-model="scrollToAdd.prereq"
-        placeholder="Address"
-        v-show="scrollToAdd.hasPrereq"
-      />
-      <input
-        class="text course prereqId"
-        v-model="scrollToAdd.prereqId"
-        placeholder="Id"
-        v-show="scrollToAdd.hasPrereq"
-      />
-      <textarea
-        class="text course desc"
-        v-model="scrollToAdd.desc"
-        :class="{ 'no-prerequisite': !scrollToAdd.hasPrereq }"
-        placeholder="Course Description"
-      ></textarea>
-      <button
-        class="Button hasPrereq"
-        @click="state.loading ? null : selectHasPrereq()"
-        v-html="scrollToAdd.hasPrereqButton"
-        :class="{ disabled: !scrollToAdd.hasPrereq }"
-      ></button>
-      <button class="Button back" @click="goBack">BACK</button>
-      <button
-        class="Button buy"
-        v-html="scrollToAdd.addButton"
-        @click="state.loading || !scrollToAdd.desc ? null : addScroll()"
-        :class="{ disabled: scrollToAdd.adding || !scrollToAdd.desc }"
-        :disabled="scrollToAdd.adding"
-      ></button>
-    </div>
-  </div>
-
-  <input
-    id="scroll-pic-upload"
-    @change="previewName($event)"
-    type="file"
-    accept="image/jpeg"
-  />
 </template>
 
 <script>
@@ -374,33 +303,6 @@ export default defineComponent({
       ],
       imageSelected: null,
     });
-    const scrollToAdd = reactive({
-      imageData: null,
-      fileName: 'Click to upload image',
-      picture: noImg,
-      addButton: 'ADD',
-      hasPrereqButton: 'Require prerequisite',
-      name: null,
-      id: null,
-      price: null,
-      hasLesson: false,
-      hasPrereq: false,
-      prereq: null,
-      prereqId: null,
-      desc: null,
-    });
-
-    function previewName(event) {
-      // console.log('File changed!');
-      const file = event.target.files[0];
-      console.log(file);
-      scrollToAdd.imageData = file;
-      scrollToAdd.fileName = file.name;
-
-      const previewing = URL.createObjectURL(event.target.files[0]);
-      scrollToAdd.picture = previewing;
-    }
-
     /**
      * Returns name of the address.
      *
@@ -560,62 +462,7 @@ export default defineComponent({
       // console.log(next);
       return magicScrolls;
     }
-    /**
-     * Returns whether user is the owner of this shop
-     *
-     * @param {address} address ethereum address
-     * @return {bool} ownership.
-     */
-    async function buy() {
-      state.buyButton = "<i class='fas fa-spinner fa-spin'></i>";
-      state.buying = true;
-      store.dispatch(
-        'User/setDialog',
-        'We are processing your transaction! It will take a while.',
-      );
 
-      const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
-      const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
-      const { tokenId } = state.imageSelected;
-      try {
-        const caller = await magicShop.methods
-          .buyScroll(tokenId)
-          .send({ from: realAddress });
-        state.buyButton = 'Buy';
-        await choosing(tokenId);
-        store.dispatch(
-          'User/setDialog',
-          'Transaction completed! Thank you for doing business with us~',
-        );
-        state.buying = false;
-
-        return caller;
-      } catch (error) {
-        state.buyButton = 'Buy';
-        state.buying = false;
-
-        store.dispatch('User/setDialog', 'Transaction rejected!');
-
-        return false;
-      }
-    }
-
-    function addScrollToggle() {
-      state.addScroll = true;
-      store.dispatch(
-        'User/setDialog',
-        'What kind of scroll would you like to add?',
-      );
-    }
-    function selectExam() {
-      scrollToAdd.hasLesson = false;
-    }
-    function selectBoth() {
-      scrollToAdd.hasLesson = true;
-    }
-    function selectHasPrereq() {
-      scrollToAdd.hasPrereq = !scrollToAdd.hasPrereq;
-    }
     function goNext() {
       state.nextPage = true;
     }
@@ -643,145 +490,6 @@ export default defineComponent({
       }
       state.addScroll = false;
     }
-
-    async function addScroll() {
-      store.dispatch('User/setFetching', true);
-      scrollToAdd.addButton = "<i class='fas fa-spinner fa-spin'></i>";
-      state.adding = true;
-
-      store.dispatch(
-        'User/setDialog',
-        'We are processing your transaction! It will take a while.',
-      );
-      try {
-        const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
-        const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
-        const preRequisite = web3.utils.isAddress(scrollToAdd.prereq)
-          ? scrollToAdd.prereq
-          : '0x0000000000000000000000000000000000000000';
-        const price = web3.utils.toWei(scrollToAdd.price.toString(), 'ether');
-        const currentType = await magicShop.methods
-          .numberOfScrollTypes()
-          .call();
-        // generating a token with 1 day of expiration time
-        const token = await Web3Token.sign(
-          (msg) => web3.eth.personal.sign(msg, realAddress),
-          '1d',
-        );
-        const storage = getStorage();
-        const storageRef = ref(storage, `images/${shopAddress}/${currentType}`);
-
-        const uploadTask = uploadBytesResumable(
-          storageRef,
-          scrollToAdd.imageData,
-        );
-        // Register three observers:
-        // 1. 'state_changed' observer, called any time the state changes
-        // 2. Error observer, called on failure
-        // 3. Completion observer, called on successful completion
-        uploadTask.on(
-          'state_changed',
-          (snapshot) => {
-            // Observe state change events such as progress, pause, and resume
-            // console.log(`Upload is ${progress}% done`);
-            // eslint-disable-next-line default-case
-            switch (snapshot.state) {
-              case 'paused':
-                // console.log('Upload is paused');
-                break;
-              case 'running':
-                // console.log('Upload is running');
-                break;
-            }
-          },
-          (error) => {
-            // Handle unsuccessful uploads
-            console.error(error.message);
-            store.dispatch('User/setFetching', false);
-          },
-          async () => {
-            getDownloadURL(uploadTask.snapshot.ref).then(
-              async (downloadURL) => {
-                try {
-                  console.log('File available at', downloadURL);
-                  scrollToAdd.picture = downloadURL;
-                  const transaction = await magicShop.methods
-                    .addScroll(
-                      scrollToAdd.prereqId ? scrollToAdd.prereqId : '0',
-                      preRequisite,
-                      scrollToAdd.hasLesson,
-                      scrollToAdd.hasPrereq,
-                      price,
-                    )
-                    .send({ from: realAddress });
-
-                  console.log(transaction);
-
-                  const requestOptions = {
-                    method: 'POST',
-                    headers: {
-                      Authorization: token,
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      url: downloadURL,
-                      address: shopAddress,
-                      tokenId: currentType.toString(),
-                      name: scrollToAdd.name,
-                      courseId: scrollToAdd.id,
-                      description: scrollToAdd.desc,
-                    }),
-                  };
-                  await fetch(
-                    'https://us-central1-deguild-2021.cloudfunctions.net/shop/addMagicScroll',
-                    requestOptions,
-                  );
-
-                  cancelAdd();
-                  store.dispatch(
-                    'User/setDialog',
-                    'Transaction completed! I will tell the customers about it!',
-                  );
-                  scrollToAdd.addButton = 'Add';
-                  state.adding = false;
-
-                  store.dispatch(
-                    'User/setDialog',
-                    'Alright, we will change that for you!',
-                  );
-                  store.dispatch('User/setFetching', false);
-                  window.location.reload();
-
-                  return transaction;
-                } catch (error) {
-                  scrollToAdd.addButton = 'Add';
-                  state.adding = false;
-                  store.dispatch('User/setFetching', false);
-
-                  store.dispatch(
-                    'User/setDialog',
-                    'Transaction rejected! Have you changed your mind?',
-                  );
-                  return null;
-                }
-              },
-            );
-          },
-        );
-      } catch (error) {
-        console.log(error);
-        scrollToAdd.addButton = 'Add';
-        state.adding = false;
-        store.dispatch('User/setFetching', false);
-
-        store.dispatch(
-          'User/setDialog',
-          'Transaction rejected! Have you changed your mind?',
-        );
-      }
-      return false;
-    }
-
     function showAll() {
       state.showAll = true;
       state.showExam = false;
@@ -827,20 +535,11 @@ export default defineComponent({
       showBoth,
       showExam,
       moreInfo,
-      buy,
-      addScrollToggle,
       cancelAdd,
       goNext,
       goBack,
-      addScroll,
-      selectExam,
-      selectBoth,
-      selectHasPrereq,
       showNext,
       showPrevious,
-      previewName,
-      owner,
-      scrollToAdd,
     };
   },
 });

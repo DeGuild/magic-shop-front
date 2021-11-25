@@ -1,8 +1,8 @@
 <template>
   <div class="display-area">
-    <background />
-
     <div v-if="user !== null">
+      <background />
+
       <div v-if="wallet === true">
         <item-shelf />
       </div>
@@ -11,11 +11,11 @@
         <approve-wallet></approve-wallet>
       </div>
     </div>
-    <no-wallet v-if="user === null" />
   </div>
-    <shop-bar></shop-bar>
-  <connect-wallet />
+  <no-wallet v-if="user === null" />
 
+  <shop-bar></shop-bar>
+  <connect-wallet />
 </template>
 
 <script>

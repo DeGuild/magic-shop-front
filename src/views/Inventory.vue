@@ -1,21 +1,18 @@
 <template>
   <div class="display-area">
-    <background />
-
     <div v-if="user !== null">
       <div v-if="wallet === true">
-        <item-shelf />
+        <personal-inventory></personal-inventory>
       </div>
       <div v-if="wallet !== true">
         <approve-modal></approve-modal>
         <approve-wallet></approve-wallet>
       </div>
     </div>
-    <no-wallet v-if="user === null" />
   </div>
-    <shop-bar></shop-bar>
+  <no-wallet v-if="user === null" />
+  <shop-bar></shop-bar>
   <connect-wallet />
-
 </template>
 
 <script>
@@ -23,23 +20,21 @@ import { useStore } from 'vuex';
 import { computed } from 'vue';
 import ConnectWallet from '../components/Buttons/ConnectWallet.vue';
 import ApproveWallet from '../components/Buttons/ApproveWallet.vue';
-import Background from '../components/General/Background.vue';
 import NoWallet from '../components/General/NoWallet.vue';
 import ApproveModal from '../components/General/Approve.vue';
-import ItemShelf from '../components/Display/ItemShelf.vue';
 import ShopBar from '../components/General/ShopBar.vue';
+import PersonalInventory from '../components/Display/PersonalInventory.vue';
 // @ is an alias to /src
 
 export default {
   name: 'ConnectWalletSite',
   components: {
     ConnectWallet,
-    Background,
     NoWallet,
-    ItemShelf,
     ApproveModal,
     ApproveWallet,
     ShopBar,
+    PersonalInventory,
   },
   setup() {
     const store = useStore();
@@ -55,6 +50,6 @@ export default {
 .display-area {
   position: absolute;
   left: 0vw;
-  top: 4.4vw;
+  top: -15vw;
 }
 </style>
