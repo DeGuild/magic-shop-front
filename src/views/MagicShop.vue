@@ -1,16 +1,21 @@
 <template>
-  <background />
-  <connect-wallet />
-  <div v-if="user !== null">
-    <div v-if="wallet === true">
-      <item-shelf />
-    </div>
-    <div v-if="wallet !== true">
-      <approve-modal></approve-modal>
-      <approve-wallet></approve-wallet>
+  <div class="display-area">
+    <div v-if="user !== null">
+      <background />
+
+      <div v-if="wallet === true">
+        <item-shelf />
+      </div>
+      <div v-if="wallet !== true">
+        <approve-modal></approve-modal>
+        <approve-wallet></approve-wallet>
+      </div>
     </div>
   </div>
   <no-wallet v-if="user === null" />
+
+  <shop-bar></shop-bar>
+  <connect-wallet />
 </template>
 
 <script>
@@ -22,6 +27,7 @@ import Background from '../components/General/Background.vue';
 import NoWallet from '../components/General/NoWallet.vue';
 import ApproveModal from '../components/General/Approve.vue';
 import ItemShelf from '../components/Display/ItemShelf.vue';
+import ShopBar from '../components/General/ShopBar.vue';
 // @ is an alias to /src
 
 export default {
@@ -33,6 +39,7 @@ export default {
     ItemShelf,
     ApproveModal,
     ApproveWallet,
+    ShopBar,
   },
   setup() {
     const store = useStore();
@@ -44,3 +51,10 @@ export default {
   },
 };
 </script>
+<style lang="scss" scoped>
+.display-area {
+  position: absolute;
+  left: 0vw;
+  top: 4.4vw;
+}
+</style>

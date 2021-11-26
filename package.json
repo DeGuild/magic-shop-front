@@ -13,8 +13,13 @@
     "@fortawesome/fontawesome-svg-core": "^1.2.36",
     "@fortawesome/free-solid-svg-icons": "^5.15.4",
     "@fortawesome/vue-fontawesome": "^3.0.0-4",
+    "@vueuse/head": "^0.6.0",
     "add": "^2.0.6",
     "core-js": "^3.6.5",
+    "dotenv": "^10.0.0",
+    "firebase": "^9.4.1",
+    "fs": "^0.0.1-security",
+    "json2csv": "^5.0.6",
     "v-viewer": "^3.0.10",
     "viewerjs": "^1.10.1",
     "vue": "^3.0.0",
@@ -23,7 +28,8 @@
     "vue-social-sharing": "^4.0.0-alpha4",
     "vue3-carousel": "^0.1.27",
     "vuex": "^4.0.0-0",
-    "web3": "^1.5.3",
+    "web3": "^1.6.1",
+    "web3-token": "^0.1.32",
     "yarn": "^1.22.15"
   },
   "devDependencies": {

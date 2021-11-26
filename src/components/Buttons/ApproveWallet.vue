@@ -1,6 +1,11 @@
 <template>
   <div v-if="user">
-    <button class="btn" @click="approve" v-html="state.primary"></button>
+    <button
+      class="btn"
+      @click="state.fetching ? null : approve()"
+      v-html="state.primary"
+      :disabled="state.fetching"
+    ></button>
   </div>
 </template>
 
@@ -18,8 +23,10 @@ const Web3 = require('web3');
  * Using relative path, just clone the git beside this project directory and compile to run
  */
 // eslint-disable-next-line no-unused-vars
-const shopAddress = '0x1B362371f11cAA26B1A993f7Ffd711c0B9966f70';
-const dgcAddress = '0x4312D992940D0b110525f553160c9984b77D1EF4';
+require('dotenv').config();
+
+const shopAddress = process.env.VUE_APP_SHOP_ADDRESS;
+const dgcAddress = process.env.VUE_APP_DGC_ADDRESS;
 const dgcABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/Tokens/DeGuildCoinERC20.sol/DeGuildCoinERC20.json').abi;
 
 export default {
@@ -34,6 +41,7 @@ export default {
       primary: 'APPROVE',
       network: '',
       magicScrollsData: [],
+      fetching: computed(() => store.state.User.fetching),
     });
     const web3 = new Web3(Web3.givenProvider || 'ws://localhost:8545');
 
@@ -65,6 +73,7 @@ export default {
      */
     async function approve() {
       state.primary = "<i class='fas fa-spinner fa-spin'></i>";
+      store.dispatch('User/setFetching', true);
 
       const deguildCoin = new web3.eth.Contract(dgcABI, dgcAddress);
       const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
@@ -76,9 +85,14 @@ export default {
         console.log(caller);
         const approval = await hasApproval(realAddress);
         store.dispatch('User/setApproval', approval);
+        store.dispatch('User/setFetching', false);
 
         return approval;
       } catch (error) {
+        state.primary = 'APPROVE';
+
+        store.dispatch('User/setFetching', false);
+
         return false;
       }
     }

@@ -1,5 +1,5 @@
 <template>
-  <div class="selection">
+  <div class="selection" v-bind:class="{ owner: !owner }">
     <div class="background"></div>
     <div v-for="imageIndex in 8" :key="imageIndex">
       <div
@@ -7,29 +7,42 @@
         :style="state.stylesFrame[imageIndex]"
       ></div>
       <div
-        class="half-circle-spinner"
-        :style="state.styles[imageIndex]"
-        v-if="state.loading"
-      >
-        <div class="half-circle-spinner circle circle-1"></div>
-        <div class="half-circle-spinner circle circle-2"></div>
-      </div>
-      <div
         class="image"
         :style="state.styles[imageIndex]"
-        v-if="state.images[imageIndex + state.pageIdx * 8 - 1]"
+        v-if="imageIndex - 1 + state.pageIdx * 8 < state.images.length"
+        v-show="!state.loading"
       >
         <img
-          class="image display click"
+          class="image display"
           :style="state.styles[imageIndex]"
           :src="state.images[imageIndex + state.pageIdx * 8 - 1].url"
-          v-on:click="choosing(imageIndex + state.pageIdx * 8 - 1)"
         />
+      </div>
+      <div
+        class="background frame click"
+        :style="state.stylesFrame[imageIndex]"
+        v-if="imageIndex - 1 + state.pageIdx * 8 < state.images.length"
+        v-on:click="
+          state.loading ? null : choosing(imageIndex - 1 + state.pageIdx * 8)
+        "
+      ></div>
+      <div v-if="state.loading">
+        <div class="image no-bg" :style="state.styles[imageIndex]">
+          <img
+            class="image display no-bg"
+            :style="state.styles[imageIndex]"
+            src="@/assets/Spinner-1s-200px.svg"
+          />
+        </div>
+        <div
+          class="background frame"
+          :style="state.stylesFrame[imageIndex]"
+        ></div>
       </div>
     </div>
     <button
       class="Button addScroll"
-      v-on:click="addScrollToggle"
+      v-on:click="state.loading ? null : addScrollToggle()"
       v-if="owner && !state.addScroll"
     >
       Add Scroll
@@ -37,13 +50,13 @@
     <button
       class="Button addScroll cancel"
       v-if="state.addScroll"
-      v-on:click="cancelAdd"
+      v-on:click="state.loading ? null : cancelAdd()"
     >
       Cancel
     </button>
     <button
       class="Button previous"
-      v-on:click="showPrevious()"
+      v-on:click="state.loading ? null : showPrevious()"
       v-if="state.pageIdx > 0"
     >
       &#60;
@@ -51,28 +64,28 @@
     <button
       class="Button exam"
       :class="{ disabled: !state.showExam }"
-      v-on:click="showExam"
+      v-on:click="state.loading ? null : showExam()"
     >
       Exam Only
     </button>
     <button
       class="Button both"
       :class="{ disabled: !state.showBoth }"
-      v-on:click="showBoth"
+      v-on:click="state.loading ? null : showBoth()"
     >
       Both
     </button>
     <button
       class="Button all"
       :class="{ disabled: !state.showAll }"
-      v-on:click="showAll"
+      v-on:click="state.loading ? null : showAll()"
     >
       All
     </button>
     <button
       class="Button"
-      v-on:click="showNext()"
-      v-if="state.pageIdx < state.images.length / 8 - 1"
+      v-on:click="state.loading ? null : showNext()"
+      v-if="state.hasNext"
     >
       &#62;
     </button>
@@ -83,7 +96,7 @@
     <div class="background item-box">
       <div class="background current-item-frame" />
       <div v-if="state.imageSelected">
-        <div v-if="state.imageSelected.purchasable">
+        <div v-if="state.imageSelected.isPurchasable">
           <div class="image selected">
             <img
               class="image selected display"
@@ -97,14 +110,14 @@
           </div>
           <button
             class="Button buy"
-            v-on:click="buy()"
+            v-on:click="state.loading ? null : buy()"
             :class="{ disabled: state.buying }"
             :disabled="state.buying"
-            v-html="state.primary"
+            v-html="state.buyButton"
           ></button>
           <div class="text price">{{ state.imageSelected.price }} DGT</div>
         </div>
-        <div v-if="!state.imageSelected.purchasable">
+        <div v-if="!state.imageSelected.isPurchasable">
           <div class="image selected">
             <img
               class="image selected display"
@@ -117,101 +130,157 @@
             {{ state.imageSelected.description }}
           </div>
           <div class="Button inaccessible">INACCESSIBLE</div>
-          <button class="Button info" v-on:click="moreInfo()">MORE INFO</button>
+          <button
+            class="Button info"
+            v-on:click="state.loading ? null : moreInfo()"
+          >
+            MORE INFO
+          </button>
           <div class="text price">{{ state.imageSelected.price }} DGT</div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- For adding -->
   <div class="selection item" v-if="state.addScroll">
     <div class="background item-box">
       <div class="background current-item-frame" />
       <div class="image selected">
-        <img class="image selected display" :src="previewUrl" />
+        <img class="image selected display" :src="scrollToAdd.picture" />
+      </div>
+      <div class="upload-pos">
+        <div class="custom-file-upload">
+          <label for="scroll-pic-upload" class="custom-file-upload button">
+            <i class="fas fa-paperclip"></i>
+            <span class="upload-preview">{{ scrollToAdd.fileName }}</span>
+          </label>
+        </div>
       </div>
       <input
-        class="text course url"
-        v-model="state.addURL"
-        placeholder="Picture URL"
-      />
-      <input
         class="text course name"
-        v-model="state.addName"
+        v-model="scrollToAdd.name"
         placeholder="Course Name"
       />
       <input
         class="text course id"
-        v-model="state.addID"
+        v-model="scrollToAdd.id"
         placeholder="Course ID"
       />
       <input
         class="text course set-price"
-        v-model="state.addPrice"
+        v-model="scrollToAdd.price"
         placeholder="Price"
+        type="number"
+        min="0"
+        oninput="validity.valid||(value='');"
       />
       <button
         class="Button exam add"
-        :class="{ disabled: state.addHasLesson }"
-        v-on:click="selectExam()"
+        :class="{ disabled: scrollToAdd.hasLesson }"
+        @click="state.loading ? null : selectExam()"
       >
         Exam Only
       </button>
       <button
         class="Button both add"
-        :class="{ disabled: !state.addHasLesson }"
-        v-on:click="selectBoth()"
+        :class="{ disabled: !scrollToAdd.hasLesson }"
+        @click="state.loading ? null : selectBoth()"
       >
         Both
       </button>
 
-      <button class="Button buy" v-on:click="goNext">NEXT</button>
+      <button
+        class="Button buy"
+        :class="{
+          disabled:
+            !scrollToAdd.name ||
+            !scrollToAdd.id ||
+            !scrollToAdd.price ||
+            !scrollToAdd.imageData,
+        }"
+        @click="goNext"
+        :disabled="
+          !scrollToAdd.name ||
+          !scrollToAdd.id ||
+          !scrollToAdd.price ||
+          !scrollToAdd.imageData
+        "
+      >
+        NEXT
+      </button>
     </div>
   </div>
-  <div class="selection item" v-if="state.nextPage">
+  <div class="selection item" v-if="state.nextPage && state.addScroll">
     <div class="background item-box">
       <input
         class="text course prereq"
-        v-model="state.addPrereq"
-        placeholder="Course Prerequisite"
-        v-show="state.addHasPrereq"
+        v-model="scrollToAdd.prereq"
+        placeholder="Address"
+        v-show="scrollToAdd.hasPrereq"
+      />
+      <input
+        class="text course prereqId"
+        v-model="scrollToAdd.prereqId"
+        placeholder="Id"
+        v-show="scrollToAdd.hasPrereq"
       />
       <textarea
         class="text course desc"
-        v-model="state.addDesc"
-        :class="{ 'no-prerequisite': !state.addHasPrereq }"
+        v-model="scrollToAdd.desc"
+        :class="{ 'no-prerequisite': !scrollToAdd.hasPrereq }"
         placeholder="Course Description"
       ></textarea>
       <button
         class="Button hasPrereq"
-        v-on:click="selectHasPrereq()"
-        v-html="state.primary3"
-        :class="{ disabled: !state.addHasPrereq }"
+        @click="state.loading ? null : selectHasPrereq()"
+        v-html="scrollToAdd.hasPrereqButton"
+        :class="{ disabled: !scrollToAdd.hasPrereq }"
       ></button>
-      <button class="Button back" v-on:click="goBack">BACK</button>
+      <button class="Button back" @click="goBack">BACK</button>
       <button
         class="Button buy"
-        v-html="state.primary2"
-        v-on:click="addScroll"
-        :class="{ disabled: state.adding }"
-        :disabled="state.adding"
+        v-html="scrollToAdd.addButton"
+        @click="state.loading || !scrollToAdd.desc ? null : addScroll()"
+        :class="{ disabled: scrollToAdd.adding || !scrollToAdd.desc }"
+        :disabled="scrollToAdd.adding"
       ></button>
     </div>
   </div>
+
+  <input
+    id="scroll-pic-upload"
+    @change="previewName($event)"
+    type="file"
+    accept="image/jpeg"
+  />
 </template>
 
 <script>
 /* eslint-disable no-unused-vars */
 /* eslint-disable max-len */
 
-import { defineComponent, reactive, computed } from 'vue';
+import {
+  defineComponent, reactive, computed, onBeforeMount,
+} from 'vue';
 import { useStore } from 'vuex';
+import {
+  getStorage,
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+} from 'firebase/storage';
+import Web3Token from 'web3-token';
 
 const Web3 = require('web3');
 
-const shopAddress = '0x1B362371f11cAA26B1A993f7Ffd711c0B9966f70';
-const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/IMagicScrolls.sol/IMagicScrolls.json').abi;
-const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/ISkillCertificate.sol/ISkillCertificate.json').abi;
-const noUrl = require('@/assets/no-url.jpg');
+// const shopAddress = '0xFA0Db8E0f8138A1675507113392839576eD3052c';
+const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/V2/IMagicScrolls+.sol/IMagicScrollsPlus.json').abi;
+const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/V2/ISkillCertificate+.sol/ISkillCertificatePlus.json').abi;
+require('dotenv').config();
+
+const shopAddress = process.env.VUE_APP_SHOP_ADDRESS;
+const noImg = require('@/assets/no-url.jpg');
 
 export default defineComponent({
   name: 'ItemShelf',
@@ -221,27 +290,18 @@ export default defineComponent({
     const owner = computed(() => store.state.User.owner);
 
     const state = reactive({
-      primary: 'BUY',
-      primary2: 'ADD',
-      primary3: 'Require prerequisite',
+      buyButton: 'BUY',
       addScroll: false,
       showBoth: false,
       showExam: false,
       showAll: false,
       nextPage: false,
-      addURL: null,
-      addName: null,
-      addID: null,
-      addPrice: null,
-      addHasPrereq: false,
-      addPrereq: null,
-      addDesc: null,
-      addHasLesson: false,
       buying: false,
       adding: false,
       scrollSelected: computed(() => (store.state.User.selectedScroll ? store.state.User.selectedScroll : null)),
       loading: computed(() => store.state.User.fetching),
       pageIdx: 0,
+      hasNext: computed(() => store.state.User.scrollToFetch),
       images: computed(() => (store.state.User.scrollList ? store.state.User.scrollList : [])),
       own: 0,
       styles: [
@@ -314,22 +374,34 @@ export default defineComponent({
           top: '37.515vw',
         },
       ],
+      imageSelected: null,
+    });
+    const scrollToAdd = reactive({
+      imageData: null,
+      fileName: 'Click to upload image',
+      picture: noImg,
+      addButton: 'ADD',
+      hasPrereqButton: 'Require prerequisite',
+      name: null,
+      id: null,
+      price: null,
+      hasLesson: false,
+      hasPrereq: false,
+      prereq: null,
+      prereqId: null,
+      desc: null,
     });
 
-    function validURL(str) {
-      const pattern = new RegExp(
-        '^(https?:\\/\\/)?' // protocol
-          + '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' // domain name
-          + '((\\d{1,3}\\.){3}\\d{1,3}))' // OR ip (v4) address
-          + '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' // port and path
-          + '(\\?[;&a-z\\d%_.~+=-]*)?' // query string
-          + '(\\#[-a-z\\d_]*)?$',
-        'i',
-      ); // fragment locator
-      return !!pattern.test(str);
-    }
+    function previewName(event) {
+      // console.log('File changed!');
+      const file = event.target.files[0];
+      console.log(file);
+      scrollToAdd.imageData = file;
+      scrollToAdd.fileName = file.name;
 
-    const previewUrl = computed(() => (validURL(state.addURL) ? state.addURL : noUrl));
+      const previewing = URL.createObjectURL(event.target.files[0]);
+      scrollToAdd.picture = previewing;
+    }
 
     /**
      * Returns name of the address.
@@ -352,12 +424,14 @@ export default defineComponent({
      * @param {address} address The address of any contract using the interface given
      * @return {string} name of the contract.
      */
-    async function getTokenType(address) {
+    async function getTokenType(address, prerequisiteId) {
       const certificateManager = new web3.eth.Contract(
         skillCertificateABI,
         address,
       );
-      const caller = await certificateManager.methods.typeAccepted().call();
+      const caller = await certificateManager.methods
+        .typeAccepted(prerequisiteId)
+        .call();
       return caller;
     }
 
@@ -382,7 +456,31 @@ export default defineComponent({
         return {};
       }
     }
+    /**
+     * Returns the url of the certificate address
+     *
+     * @param {address} address The certificate's address
+     * @return {string} certificate's url.
+     */
+    async function getTitle(address, tokenType) {
+      const imageUrl = await fetch(
+        `https://us-central1-deguild-2021.cloudfunctions.net/app/readCertificate/${address}/${tokenType}`,
+        { mode: 'cors' },
+      );
 
+      const dataUrl = await imageUrl.json();
+      // console.log(dataUrl.url);
+      return dataUrl.title;
+    }
+
+    async function getManagerName(address) {
+      const certificateManager = new web3.eth.Contract(
+        skillCertificateABI,
+        address,
+      );
+      const caller = await certificateManager.methods.name().call();
+      return caller;
+    }
     /**
      * Returns name of the address.
      *
@@ -406,7 +504,7 @@ export default defineComponent({
      */
     async function choosing(imageIdx) {
       state.imageSelected = state.images[imageIdx];
-      // console.log(state.imageSelected);
+      console.log(state.imageSelected);
       store.dispatch(
         'User/setDialog',
         'Counting your owned scrolls for this one...',
@@ -414,13 +512,16 @@ export default defineComponent({
       state.own = '...';
       state.own = await getBalanceOf(state.imageSelected);
 
-      if (state.imageSelected.purchasable) {
+      if (state.imageSelected.isPurchasable) {
         store.dispatch('User/setDialog', 'Would you like to buy more?');
       } else {
-        const prerequisite = await getName(state.imageSelected.prerequisite);
+        const prerequisiteTitle = await getTitle(
+          state.imageSelected.prerequisite,
+          state.imageSelected.prerequisiteId,
+        );
         store.dispatch(
           'User/setDialog',
-          `You need to earn ${prerequisite} certificate first!`,
+          `You need to earn ${prerequisiteTitle} certificate first!`,
         );
       }
     }
@@ -432,10 +533,11 @@ export default defineComponent({
      * @return {bool} ownership.
      */
     async function moreInfo() {
-      const { prerequisite } = state.imageSelected;
+      const { prerequisite, prerequisiteId } = state.imageSelected;
       const confirm = await isShopOwnPrerequisite(prerequisite);
-      const type = await getTokenType(prerequisite);
-      // console.log(confirm, type, prerequisite);
+      const type = await getTokenType(prerequisite, prerequisiteId);
+      // console.log(state.imageSelected);
+      console.log(confirm, type, prerequisite);
       if (confirm) {
         await choosing(type);
         store.dispatch(
@@ -443,13 +545,34 @@ export default defineComponent({
           `Please earn the certificate of this scroll, ${state.images[type].name}.`,
         );
       } else {
-        store.dispatch(
-          'User/setDialog',
-          `You are not verified by ${prerequisite}`,
-        );
+        const title = await getTitle(prerequisite, prerequisiteId);
+        const name = await getManagerName(prerequisite, prerequisiteId);
+        store.dispatch('User/setDialog', `${title} by ${name} is required`);
       }
     }
+    async function fetchAllMagicScrolls(pageidx) {
+      // console.log(nextToFetch);
+      const response = await fetch(
+        `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/${shopAddress}/${store.state.User.user}/${pageidx}`,
+        { mode: 'cors' },
+      );
 
+      const magicScrolls = await response.json();
+
+      const nextIsPossible = await fetch(
+        `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/${shopAddress}/${store.state.User.user}/${pageidx + 1}`,
+        { mode: 'cors' },
+      );
+
+      if (nextIsPossible.status === 200) {
+        store.dispatch('User/setMagicScrollToFetch', true);
+      } else {
+        store.dispatch('User/setMagicScrollToFetch', false);
+      }
+      // console.log(magicScrolls);
+      // console.log(next);
+      return magicScrolls;
+    }
     /**
      * Returns whether user is the owner of this shop
      *
@@ -457,7 +580,7 @@ export default defineComponent({
      * @return {bool} ownership.
      */
     async function buy() {
-      state.primary = "<i class='fas fa-spinner fa-spin'></i>";
+      state.buyButton = "<i class='fas fa-spinner fa-spin'></i>";
       state.buying = true;
       store.dispatch(
         'User/setDialog',
@@ -471,7 +594,7 @@ export default defineComponent({
         const caller = await magicShop.methods
           .buyScroll(tokenId)
           .send({ from: realAddress });
-        state.primary = 'Buy';
+        state.buyButton = 'Buy';
         await choosing(tokenId);
         store.dispatch(
           'User/setDialog',
@@ -481,13 +604,10 @@ export default defineComponent({
 
         return caller;
       } catch (error) {
-        state.primary = 'Buy';
+        state.buyButton = 'Buy';
         state.buying = false;
 
-        store.dispatch(
-          'User/setDialog',
-          'Transaction rejected! Have you changed your mind?',
-        );
+        store.dispatch('User/setDialog', 'Transaction rejected!');
 
         return false;
       }
@@ -495,20 +615,19 @@ export default defineComponent({
 
     function addScrollToggle() {
       state.addScroll = true;
-      state.imageSelected = null;
       store.dispatch(
         'User/setDialog',
         'What kind of scroll would you like to add?',
       );
     }
     function selectExam() {
-      state.addHasLesson = false;
+      scrollToAdd.hasLesson = false;
     }
     function selectBoth() {
-      state.addHasLesson = true;
+      scrollToAdd.hasLesson = true;
     }
     function selectHasPrereq() {
-      state.addHasPrereq = !state.addHasPrereq;
+      scrollToAdd.hasPrereq = !scrollToAdd.hasPrereq;
     }
     function goNext() {
       state.nextPage = true;
@@ -516,97 +635,163 @@ export default defineComponent({
     function goBack() {
       state.nextPage = false;
     }
-    function showNext() {
+    async function showNext() {
       state.pageIdx += 1;
+      store.dispatch('User/setFetching', true);
+      const scrollsData = await fetchAllMagicScrolls(state.pageIdx);
+      store.dispatch('User/setMagicScrolls', scrollsData);
+      setTimeout(() => store.dispatch('User/setFetching', false), 100);
     }
-    function showPrevious() {
+    async function showPrevious() {
       state.pageIdx -= 1;
+      store.dispatch('User/setFetching', true);
+      const scrollsData = await fetchAllMagicScrolls(state.pageIdx);
+      store.dispatch('User/setMagicScrolls', scrollsData);
+      setTimeout(() => store.dispatch('User/setFetching', false), 100);
     }
     function cancelAdd() {
       if (!state.adding) {
-        store.dispatch(
-          'User/setDialog',
-          'Cancelled! No scroll will be added!',
-        );
+        store.dispatch('User/setDialog', 'Cancelled! No scroll will be added!');
       }
-      state.addURL = null;
-      state.addName = null;
-      state.addID = null;
-      state.addPrice = null;
-      state.addPrereq = null;
-      state.addDesc = null;
       state.addScroll = false;
-      state.nextPage = false;
     }
 
-    /**
-     * Returns whether user is the owner of this shop
-     *
-     * @param {address} address ethereum address
-     * @return {bool} ownership.
-     */
     async function addScroll() {
-      state.primary2 = "<i class='fas fa-spinner fa-spin'></i>";
+      store.dispatch('User/setFetching', true);
+      scrollToAdd.addButton = "<i class='fas fa-spinner fa-spin'></i>";
       state.adding = true;
-      /**
-       * TODO: Validate data properly before sending to rinkeby
-       * * My suggestion is that we should use vee-validate later
-       */
+
       store.dispatch(
         'User/setDialog',
         'We are processing your transaction! It will take a while.',
       );
-
-      const preRequisite = web3.utils.isAddress(state.addPrereq)
-        ? state.addPrereq
-        : '0x0000000000000000000000000000000000000000';
-      const price = web3.utils.toWei(state.addPrice, 'ether');
-      const hasPrerequisite = state.addHasPrereq;
-      const hasLesson = state.addHasLesson;
-
-      const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
-      const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
-
       try {
-        const caller = await magicShop.methods
-          .addScroll(preRequisite, hasLesson, hasPrerequisite, price)
-          .send({ from: realAddress });
-        const requestOptions = {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            url: state.addURL,
-            address: shopAddress,
-            tokenId: caller.events.ScrollAdded.returnValues.scrollID,
-            name: state.addName,
-            courseId: state.addID,
-            description: state.addDesc,
-          }),
-        };
-        await fetch(
-          'https://us-central1-deguild-2021.cloudfunctions.net/shop/addMagicScroll',
-          requestOptions,
+        const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
+        const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
+        const preRequisite = web3.utils.isAddress(scrollToAdd.prereq)
+          ? scrollToAdd.prereq
+          : '0x0000000000000000000000000000000000000000';
+        const price = web3.utils.toWei(scrollToAdd.price.toString(), 'ether');
+        const currentType = await magicShop.methods
+          .numberOfScrollTypes()
+          .call();
+        // generating a token with 1 day of expiration time
+        const token = await Web3Token.sign(
+          (msg) => web3.eth.personal.sign(msg, realAddress),
+          '1d',
         );
+        const storage = getStorage();
+        const storageRef = ref(storage, `images/${shopAddress}/${currentType}`);
 
-        cancelAdd();
-        store.dispatch(
-          'User/setDialog',
-          'Transaction completed! I will tell the customers about it!',
+        const uploadTask = uploadBytesResumable(
+          storageRef,
+          scrollToAdd.imageData,
         );
-        state.primary2 = 'Add';
-        state.adding = false;
+        // Register three observers:
+        // 1. 'state_changed' observer, called any time the state changes
+        // 2. Error observer, called on failure
+        // 3. Completion observer, called on successful completion
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            // Observe state change events such as progress, pause, and resume
+            // console.log(`Upload is ${progress}% done`);
+            // eslint-disable-next-line default-case
+            switch (snapshot.state) {
+              case 'paused':
+                // console.log('Upload is paused');
+                break;
+              case 'running':
+                // console.log('Upload is running');
+                break;
+            }
+          },
+          (error) => {
+            // Handle unsuccessful uploads
+            console.error(error.message);
+            store.dispatch('User/setFetching', false);
+          },
+          async () => {
+            getDownloadURL(uploadTask.snapshot.ref).then(
+              async (downloadURL) => {
+                try {
+                  console.log('File available at', downloadURL);
+                  scrollToAdd.picture = downloadURL;
+                  const transaction = await magicShop.methods
+                    .addScroll(
+                      scrollToAdd.prereqId ? scrollToAdd.prereqId : '0',
+                      preRequisite,
+                      scrollToAdd.hasLesson,
+                      scrollToAdd.hasPrereq,
+                      price,
+                    )
+                    .send({ from: realAddress });
 
-        return caller;
+                  console.log(transaction);
+
+                  const requestOptions = {
+                    method: 'POST',
+                    headers: {
+                      Authorization: token,
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      url: downloadURL,
+                      address: shopAddress,
+                      tokenId: currentType.toString(),
+                      name: scrollToAdd.name,
+                      courseId: scrollToAdd.id,
+                      description: scrollToAdd.desc,
+                    }),
+                  };
+                  await fetch(
+                    'https://us-central1-deguild-2021.cloudfunctions.net/shop/addMagicScroll',
+                    requestOptions,
+                  );
+
+                  cancelAdd();
+                  store.dispatch(
+                    'User/setDialog',
+                    'Transaction completed! I will tell the customers about it!',
+                  );
+                  scrollToAdd.addButton = 'Add';
+                  state.adding = false;
+
+                  store.dispatch(
+                    'User/setDialog',
+                    'Alright, we will change that for you!',
+                  );
+                  store.dispatch('User/setFetching', false);
+                  window.location.reload();
+
+                  return transaction;
+                } catch (error) {
+                  scrollToAdd.addButton = 'Add';
+                  state.adding = false;
+                  store.dispatch('User/setFetching', false);
+
+                  store.dispatch(
+                    'User/setDialog',
+                    'Transaction rejected! Have you changed your mind?',
+                  );
+                  return null;
+                }
+              },
+            );
+          },
+        );
       } catch (error) {
-        state.primary2 = 'Add';
+        console.log(error);
+        scrollToAdd.addButton = 'Add';
         state.adding = false;
+        store.dispatch('User/setFetching', false);
 
         store.dispatch(
           'User/setDialog',
           'Transaction rejected! Have you changed your mind?',
         );
-        return false;
       }
+      return false;
     }
 
     function showAll() {
@@ -646,6 +831,13 @@ export default defineComponent({
         'These scrolls let you earn certificate, but you do not get to learn the lessons',
       );
     }
+    onBeforeMount(async () => {
+      store.dispatch('User/setFetching', true);
+
+      const scrollsData = await fetchAllMagicScrolls(0);
+      store.dispatch('User/setMagicScrolls', scrollsData);
+      store.dispatch('User/setFetching', false);
+    });
 
     return {
       state,
@@ -665,14 +857,73 @@ export default defineComponent({
       selectHasPrereq,
       showNext,
       showPrevious,
+      previewName,
       owner,
-      previewUrl,
+      scrollToAdd,
     };
   },
 });
 </script>
 
 <style scoped lang="scss">
+input[type='file'] {
+  display: none;
+}
+.fas {
+  color: rgb(92, 92, 92);
+  margin-right: 1vw;
+}
+.upload-pos {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  left: 5vw;
+  top: 5vw;
+  position: relative;
+}
+.upload-preview {
+  display: inline-block;
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 900;
+  font-size: 1vw;
+  white-space: nowrap;
+  top: 0.4vw;
+  position: relative;
+  color: white;
+  width: 15vw;
+  height: 1.5vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.custom-file-upload {
+  position: relative;
+  width: 20vw;
+  height: 2vw;
+  margin-top: 1vw;
+  padding-bottom: 1vw;
+  padding-left: 1vw;
+  // background: red;
+
+  // display: flex;
+  // align-items: center;
+  // justify-content: center;
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 1vw;
+  color: #000000;
+  cursor: pointer;
+
+  &.button {
+    padding-bottom: 0vw;
+    padding: 0.5vw 0.5vw 0.5vw 0.5vw;
+
+    background: rgba(224, 224, 224, 0.6);
+    overflow: hidden;
+  }
+}
 .selection {
   top: 3.5vw;
   left: -2vw;
@@ -681,21 +932,20 @@ export default defineComponent({
     top: 0vw;
     left: -3vw;
   }
+  &.owner {
+    top: 0vw;
+  }
 }
 .image {
   width: 7.5vw;
   height: 7.5vw;
   position: absolute;
-
+  background: url('../../assets/Spinner-1s-200px.svg') no-repeat center;
+  &.no-bg {
+    background: unset;
+  }
   &.display {
     position: static;
-  }
-
-  &.click {
-    cursor: pointer;
-    &:hover {
-      opacity: 0.9;
-    }
   }
 
   &.selected {
@@ -712,10 +962,16 @@ export default defineComponent({
   background: #585858;
   left: 45.625vw;
   top: 24.115vw;
+  &.click {
+    cursor: pointer;
+    &:hover {
+      opacity: 0.9;
+    }
+  }
   &.frame {
     width: 8.542vw;
     height: 8.542vw;
-    background: url('../../assets/itemFrame.png');
+    background: url('../../assets/itemFrame_new.png');
     background-size: cover;
   }
   &.item-box {
@@ -1004,10 +1260,17 @@ export default defineComponent({
   &.description {
     position: absolute;
     width: 30.5vw;
-    height: 15vw;
+    height: 13vw;
     left: 2.3vw;
-    top: 14vw;
-    font-size: 1.1vw;
+    top: 13vw;
+    font-size: 1.2vw;
+    overflow: auto;
+    // text-overflow: ellipsis;
+    padding-top: 1vw;
+    padding-bottom: 1vw;
+    background: rgba(0, 12, 44, 0.39);
+    display: inline-block;
+    text-align: left;
   }
 
   &.course {
@@ -1040,6 +1303,15 @@ export default defineComponent({
     &.prereq {
       top: 7vw;
       height: 4vw;
+      width: 20vw;
+    }
+
+    &.prereqId {
+      top: 7vw;
+      height: 4vw;
+      left: 25vw;
+
+      width: 7vw;
     }
 
     &.desc {
@@ -1050,43 +1322,6 @@ export default defineComponent({
       &.no-prerequisite {
         top: 7vw;
       }
-    }
-  }
-}
-.half-circle-spinner {
-  box-sizing: border-box;
-  width: 5vw;
-  height: 5vw;
-  top: 1.1vw;
-  left: 1.1vw;
-  border-radius: 100%;
-  position: absolute;
-
-  &.circle {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 100%;
-    border: calc(60px / 10) solid transparent;
-  }
-
-  &.circle.circle-1 {
-    border-top-color: #ff1d5e;
-    animation: half-circle-spinner-animation 1s infinite;
-  }
-
-  &.circle.circle-2 {
-    border-bottom-color: #ff1d5e;
-    animation: half-circle-spinner-animation 1s infinite alternate;
-  }
-
-  @keyframes half-circle-spinner-animation {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
     }
   }
 }
