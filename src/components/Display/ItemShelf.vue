@@ -409,21 +409,6 @@ export default defineComponent({
      * @param {address} address The address of any contract using the interface given
      * @return {string} name of the contract.
      */
-    async function getName(address) {
-      const certificateManager = new web3.eth.Contract(
-        skillCertificateABI,
-        address,
-      );
-      const caller = await certificateManager.methods.name().call();
-      return caller;
-    }
-
-    /**
-     * Returns name of the address.
-     *
-     * @param {address} address The address of any contract using the interface given
-     * @return {string} name of the contract.
-     */
     async function getTokenType(address, prerequisiteId) {
       const certificateManager = new web3.eth.Contract(
         skillCertificateABI,
