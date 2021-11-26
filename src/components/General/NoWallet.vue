@@ -1,7 +1,7 @@
 <template>
-  <div class="overlay"></div>
-  <h1 class="text"><i class="fas fa-info-circle"></i></h1>
-  <h2 class="text description">PLEASE CONNECT YOUR WALLET</h2>
+  <div class="overlay-no-wallet"></div>
+  <h1 class="text-no-wallet"><i class="fas fa-info-circle"></i></h1>
+  <h2 class="text-no-wallet description">PLEASE CONNECT YOUR WALLET</h2>
 </template>
 
 <script>
@@ -10,7 +10,7 @@ export default {
 };
 </script>
 <style scoped lang="scss">
-.overlay {
+.overlay-no-wallet {
   /* Rectangle 9939 */
 
   position: absolute;
@@ -21,7 +21,7 @@ export default {
 
   background: rgba(0, 0, 0, 0.5);
 }
-.text {
+.text-no-wallet {
   color: #ff0000;
   position: absolute;
   left: 45.729vw;

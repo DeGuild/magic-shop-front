@@ -1,11 +1,11 @@
 <template>
   <div v-if="!user">
-    <button class="btn" @click="ethEnabled">
-      <div class="text" v-html="state.primary"></div>
+    <button class="connect-button" @click="ethEnabled">
+      <div v-html="state.primary"></div>
     </button>
   </div>
   <div v-if="user">
-    <div class="btn connected" v-html="state.primary"></div>
+    <div class="connect-button connected" v-html="state.primary"></div>
   </div>
 </template>
 
@@ -258,7 +258,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.btn {
+.connect-button {
   /* Small button */
 
   display: flex;
