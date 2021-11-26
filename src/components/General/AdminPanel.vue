@@ -157,7 +157,7 @@ export default {
 
       const skillsWithType = await responseNew.json();
       state.courses = skillsWithType;
-      console.log(skillsWithType);
+      // console.log(skillsWithType);
 
       store.dispatch('User/setFetching', false);
     }
@@ -173,8 +173,8 @@ export default {
           (msg) => web3.eth.personal.sign(msg, realAddress),
           '1d',
         );
-        console.log(token);
-        console.log(downloading.course);
+        // console.log(token);
+        // console.log(downloading.course);
 
         const requestOptions = {
           method: 'GET',
@@ -188,7 +188,7 @@ export default {
         );
 
         const rounds = await response.json();
-        console.log(rounds);
+        // console.log(rounds);
         state.rounds = rounds;
 
         store.dispatch('User/setFetching', false);
@@ -205,7 +205,7 @@ export default {
         (msg) => web3.eth.personal.sign(msg, realAddress),
         '1d',
       );
-      console.log(token);
+      // console.log(token);
 
       const requestOptions = {
         method: 'POST',
@@ -225,8 +225,8 @@ export default {
         requestOptions,
       );
 
-      const rounds = await response.json();
-      console.log(rounds);
+      await response.json();
+      // console.log(rounds);
 
       store.dispatch('User/setFetching', false);
     }
@@ -240,7 +240,7 @@ export default {
           (msg) => web3.eth.personal.sign(msg, realAddress),
           '1d',
         );
-        console.log(token);
+        // console.log(token);
         const requestOptions = {
           method: 'GET',
           headers: {
@@ -254,7 +254,7 @@ export default {
           requestOptions,
         );
         const data = await response.text();
-        console.log(response);
+        // console.log(response);
         const downloadLink = document.createElement('a');
         const blob = new Blob(['\ufeff', data]);
         const url = URL.createObjectURL(blob);
@@ -343,18 +343,18 @@ export default {
       fr.onload = async () => {
         try {
           const csvArray = CSVToArray(fr.result);
-          console.log(csvArray);
+          // console.log(csvArray);
           const jsonObjHeader = [].concat.apply(...csvArray.slice(0, 1));
-          console.log(jsonObjHeader);
+          // console.log(jsonObjHeader);
 
           const jsonArr = csvArray.slice(1).map((row) => {
             const objForJSON = {};
-            // console.log(row);
+            // //console.log(row);
             for (let index = 0; index < jsonObjHeader.length; index += 1) {
               objForJSON[jsonObjHeader[index]] = row[index];
-              // console.log(objForJSON[jsonObjHeader[index]]);
+              // //console.log(objForJSON[jsonObjHeader[index]]);
             }
-            // console.log(objForJSON);
+            // //console.log(objForJSON);
             return objForJSON;
           });
           const passed = jsonArr.filter((ele) => ele.status);
@@ -365,12 +365,12 @@ export default {
             skillCertificateABI,
             downloading.course.address,
           );
-          console.log(arrayUser, arrayToken, typeId.toString());
+          // console.log(arrayUser, arrayToken, typeId.toString());
 
-          const transaction = await manager.methods
+          await manager.methods
             .batchMint(arrayUser, arrayToken, typeId.toString())
             .send({ from: store.state.User.user });
-          console.log(transaction);
+          // console.log(transaction);
         } catch (err) {
           console.error(err);
         }
@@ -380,9 +380,9 @@ export default {
     }
 
     function previewCSV(event) {
-      // console.log('File changed!');
+      // //console.log('File changed!');
       const file = event.target.files[0];
-      console.log(file);
+      // console.log(file);
       // state.picture = previewing;
       state.csvFile = file;
       state.csvName = file.name;

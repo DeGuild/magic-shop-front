@@ -79,10 +79,10 @@ export default {
       const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
       try {
         const balance = await deguildCoin.methods.balanceOf(realAddress).call();
-        const caller = await deguildCoin.methods
+        await deguildCoin.methods
           .approve(shopAddress, balance)
           .send({ from: realAddress });
-        console.log(caller);
+        // console.log(caller);
         const approval = await hasApproval(realAddress);
         store.dispatch('User/setApproval', approval);
         store.dispatch('User/setFetching', false);

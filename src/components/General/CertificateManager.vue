@@ -176,8 +176,8 @@ export default {
 
       const magicScrolls = await response.json();
       const managers = await response2.json();
-      // console.log(magicScrolls);
-      console.log(managers);
+      // //console.log(magicScrolls);
+      // console.log(managers);
       if (!managers.message) {
         state.managers = managers;
       }
@@ -186,9 +186,9 @@ export default {
     }
 
     function previewImage(event) {
-      // console.log('File changed!');
+      // //console.log('File changed!');
       const file = event.target.files[0];
-      console.log(file);
+      // console.log(file);
       state.imagePreview = URL.createObjectURL(file);
       state.imageFile = file;
       state.imageName = file.name;
@@ -196,10 +196,10 @@ export default {
 
     async function approveCertificateManager() {
       const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
-      const transaction = await magicShop.methods
+      await magicShop.methods
         .setCertificateManager(certificate.approve, true)
         .send({ from: user.value });
-      console.log(transaction);
+      // console.log(transaction);
     }
     async function addSkill() {
       store.dispatch('User/setFetching', true);
@@ -219,7 +219,7 @@ export default {
           (msg) => web3.eth.personal.sign(msg, realAddress),
           '1d',
         );
-        console.log(token);
+        // console.log(token);
         const storage = getStorage();
         const storageRef = ref(
           storage,
@@ -240,14 +240,14 @@ export default {
           'state_changed',
           (snapshot) => {
             // Observe state change events such as progress, pause, and resume
-            // console.log(`Upload is ${progress}% done`);
+            // //console.log(`Upload is ${progress}% done`);
             // eslint-disable-next-line default-case
             switch (snapshot.state) {
               case 'paused':
-                // console.log('Upload is paused');
+                // //console.log('Upload is paused');
                 break;
               case 'running':
-                // console.log('Upload is running');
+                // //console.log('Upload is running');
                 break;
             }
           },
@@ -260,17 +260,17 @@ export default {
             getDownloadURL(uploadTask.snapshot.ref).then(
               async (downloadURL) => {
                 try {
-                  const transaction = await certificateManager.methods
+                  await certificateManager.methods
                     .addCertificate(certificate.scrollType)
                     .send({ from: realAddress });
-                  console.log(transaction);
-                  console.log('File available at', downloadURL);
-                  console.log({
-                    url: downloadURL,
-                    address: certificate.address,
-                    tokenId: count.toString(),
-                    title: certificate.name,
-                  });
+                  // console.log(transaction);
+                  // console.log('File available at', downloadURL);
+                  // console.log({
+                  //   url: downloadURL,
+                  //   address: certificate.address,
+                  //   tokenId: count.toString(),
+                  //   title: certificate.name,
+                  // });
                   const requestOptions = {
                     method: 'POST',
                     headers: {
@@ -301,7 +301,7 @@ export default {
           },
         );
       } catch (error) {
-        console.log(error);
+        // console.log(error);
         store.dispatch('User/setFetching', false);
       }
       return false;

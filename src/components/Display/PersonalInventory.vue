@@ -334,7 +334,7 @@ export default defineComponent({
      */
     async function choosing(imageIdx) {
       state.imageSelected = state.images[imageIdx];
-      console.log(state.imageSelected);
+      // console.log(state.imageSelected);
       state.own = state.imageSelected.own;
     }
 
@@ -372,7 +372,7 @@ export default defineComponent({
         const tranasction = await magicShop.methods
           .consume(state.imageSelected.tokenId, state.passcode)
           .send({ from: realAddress });
-        console.log(tranasction);
+        // console.log(tranasction);
         store.dispatch('User/setFetching', false);
 
         return tranasction;

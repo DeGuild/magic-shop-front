@@ -181,7 +181,7 @@ export default {
           );
           store.dispatch('User/setFetching', true);
 
-          console.log(balance);
+          // console.log(balance);
           store.dispatch('User/setApproval', approve);
           if (!approve) {
             store.dispatch(
@@ -190,7 +190,7 @@ export default {
             );
           }
           store.dispatch('User/setFetching', false);
-          console.log(store.state.User.scrollList);
+          // console.log(store.state.User.scrollList);
           store.dispatch(
             'User/setDialog',
             'Great! So, what would you like to buy?',
@@ -198,7 +198,7 @@ export default {
 
           return true;
         } catch (error) {
-          console.log(error);
+          // console.log(error);
         }
       } else {
         router.push('/no-provider');
