@@ -357,7 +357,7 @@ export default {
             // //console.log(objForJSON);
             return objForJSON;
           });
-          const passed = jsonArr.filter((ele) => ele.status);
+          const passed = jsonArr.filter((ele) => ele.status === 'true');
           const arrayUser = passed.map((ele) => ele.address);
           const arrayToken = passed.map((ele) => ele.tokenId);
           const typeId = downloading.course.tokenId;
