@@ -357,8 +357,9 @@ export default {
             // console.log(objForJSON);
             return objForJSON;
           });
-          const arrayUser = jsonArr.map((ele) => ele.address);
-          const arrayToken = jsonArr.map((ele) => ele.tokenId);
+          const passed = jsonArr.filter((ele) => ele.status);
+          const arrayUser = passed.map((ele) => ele.address);
+          const arrayToken = passed.map((ele) => ele.tokenId);
           const typeId = downloading.course.tokenId;
           const manager = new web3.eth.Contract(
             skillCertificateABI,
