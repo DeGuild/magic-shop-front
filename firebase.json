@@ -1,17 +1,12 @@
 {
   "hosting": {
     "public": "dist",
-    "site": "mona-shop",
+    "site": "mona-magic-shop",
     "rewrites": [
       {
         "source": "**",
         "destination": "/index.html"
       }
-    ],
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
     ]
   }
 }
