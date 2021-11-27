@@ -10,7 +10,9 @@
 
 <script>
 import { useStore } from 'vuex';
-import { computed } from 'vue';
+import { computed, reactive } from 'vue';
+import { useHead } from '@vueuse/head';
+
 import ConnectWallet from '../components/Buttons/ConnectWallet.vue';
 import NoWallet from '../components/General/NoWallet.vue';
 import AdminPanel from '../components/General/AdminPanel.vue';
@@ -31,6 +33,19 @@ export default {
     const wallet = computed(() => store.state.User.approval);
     // console.log(store.state.User.user);
     // console.log(user);
+    const siteData = reactive({
+      title: 'Mona\'s Magic Shop - Admin',
+      description: 'Courses for everyone',
+    });
+    useHead({
+      title: computed(() => siteData.title),
+      meta: [
+        {
+          name: 'description',
+          content: computed(() => siteData.description),
+        },
+      ],
+    });
     return { user, wallet };
   },
 };
