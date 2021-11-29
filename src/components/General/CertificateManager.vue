@@ -176,8 +176,8 @@ export default {
 
       const magicScrolls = await response.json();
       const managers = await response2.json();
-      // //console.log(magicScrolls);
-      // console.log(managers);
+      console.log(magicScrolls);
+      console.log(managers);
       if (!managers.message) {
         state.managers = managers;
       }
@@ -219,11 +219,11 @@ export default {
           (msg) => web3.eth.personal.sign(msg, realAddress),
           '1d',
         );
-        // console.log(token);
+        // console.log('this one', `images/${certificate.address}/0`);
         const storage = getStorage();
         const storageRef = ref(
           storage,
-          `images/${certificate.address}/${count.length}`,
+          `images/${certificate.address}/${count}`,
         );
 
         const certificateManager = new web3.eth.Contract(
@@ -259,18 +259,8 @@ export default {
           async () => {
             getDownloadURL(uploadTask.snapshot.ref).then(
               async (downloadURL) => {
+                console.log(downloadURL);
                 try {
-                  await certificateManager.methods
-                    .addCertificate(certificate.scrollType)
-                    .send({ from: realAddress });
-                  // console.log(transaction);
-                  // console.log('File available at', downloadURL);
-                  // console.log({
-                  //   url: downloadURL,
-                  //   address: certificate.address,
-                  //   tokenId: count.toString(),
-                  //   title: certificate.name,
-                  // });
                   const requestOptions = {
                     method: 'POST',
                     headers: {
@@ -288,6 +278,18 @@ export default {
                     'https://us-central1-deguild-2021.cloudfunctions.net/certificate/addCertificate',
                     requestOptions,
                   );
+                  await certificateManager.methods
+                    .addCertificate(certificate.scrollType)
+                    .send({ from: realAddress });
+                  // console.log(transaction);
+                  // console.log('File available at', downloadURL);
+                  // console.log({
+                  //   url: downloadURL,
+                  //   address: certificate.address,
+                  //   tokenId: count.toString(),
+                  //   title: certificate.name,
+                  // });
+
                   store.dispatch('User/setFetching', false);
 
                   return null;

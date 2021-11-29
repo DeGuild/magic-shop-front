@@ -227,6 +227,7 @@ export default {
 
       await response.json();
       // console.log(rounds);
+      await getRound();
 
       store.dispatch('User/setFetching', false);
     }
@@ -240,7 +241,7 @@ export default {
           (msg) => web3.eth.personal.sign(msg, realAddress),
           '1d',
         );
-        // console.log(token);
+        console.log(token);
         const requestOptions = {
           method: 'GET',
           headers: {
