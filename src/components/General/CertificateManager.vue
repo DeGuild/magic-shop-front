@@ -176,8 +176,8 @@ export default {
 
       const magicScrolls = await response.json();
       const managers = await response2.json();
-      console.log(magicScrolls);
-      console.log(managers);
+      // console.log(magicScrolls);
+      // console.log(managers);
       if (!managers.message) {
         state.managers = managers;
       }
@@ -251,15 +251,16 @@ export default {
                 break;
             }
           },
+          // eslint-disable-next-line no-unused-vars
           (error) => {
             // Handle unsuccessful uploads
-            console.error(error.message);
+            // console.error(error.message);
             store.dispatch('User/setFetching', false);
           },
           async () => {
             getDownloadURL(uploadTask.snapshot.ref).then(
               async (downloadURL) => {
-                console.log(downloadURL);
+                // console.log(downloadURL);
                 try {
                   const requestOptions = {
                     method: 'POST',

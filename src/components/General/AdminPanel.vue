@@ -241,7 +241,7 @@ export default {
           (msg) => web3.eth.personal.sign(msg, realAddress),
           '1d',
         );
-        console.log(token);
+        // console.log(token);
         const requestOptions = {
           method: 'GET',
           headers: {
@@ -267,7 +267,7 @@ export default {
         document.body.removeChild(downloadLink);
         store.dispatch('User/setFetching', false);
       } catch (err) {
-        console.error(err);
+        // console.error(err);
         store.dispatch('User/setFetching', false);
       }
     }
@@ -373,7 +373,7 @@ export default {
             .send({ from: store.state.User.user });
           // console.log(transaction);
         } catch (err) {
-          console.error(err);
+          // console.error(err);
         }
       };
 
