@@ -4,11 +4,11 @@
       <div v-if="wallet === true">
         <personal-inventory></personal-inventory>
       </div>
-      <div v-if="wallet !== true">
-        <approve-modal></approve-modal>
-        <approve-wallet></approve-wallet>
-      </div>
     </div>
+  </div>
+  <div v-if="wallet !== true">
+    <approve-modal></approve-modal>
+    <approve-wallet></approve-wallet>
   </div>
   <no-wallet v-if="user === null" />
   <shop-bar></shop-bar>
@@ -44,7 +44,7 @@ export default {
     // console.log(store.state.User.user);
     // console.log(user);
     const siteData = reactive({
-      title: 'Mona\'s Magic Shop - Inventory',
+      title: "Mona's Magic Shop - Inventory",
       description: 'Courses for everyone',
     });
     useHead({
