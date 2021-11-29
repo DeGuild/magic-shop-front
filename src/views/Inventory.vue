@@ -6,7 +6,7 @@
       </div>
     </div>
   </div>
-  <div v-if="wallet !== true">
+  <div v-if="wallet !== true && user !== null">
     <approve-modal></approve-modal>
     <approve-wallet></approve-wallet>
   </div>

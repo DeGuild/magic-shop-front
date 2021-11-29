@@ -6,14 +6,13 @@
       <div v-if="wallet === true">
         <item-shelf />
       </div>
-      <div v-if="wallet !== true">
-        <approve-modal></approve-modal>
-        <approve-wallet></approve-wallet>
-      </div>
     </div>
   </div>
   <no-wallet v-if="user === null" />
-
+  <div v-if="wallet !== true && user !== null">
+    <approve-modal></approve-modal>
+    <approve-wallet></approve-wallet>
+  </div>
   <shop-bar></shop-bar>
   <connect-wallet />
 </template>
@@ -49,7 +48,7 @@ export default {
     // console.log(store.state.User.user);
     // console.log(user);
     const siteData = reactive({
-      title: 'Mona\'s Magic Shop - Shop',
+      title: "Mona's Magic Shop - Shop",
       description: 'Courses for everyone',
     });
     useHead({
