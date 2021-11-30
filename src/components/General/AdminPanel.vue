@@ -375,7 +375,7 @@ export default {
             .send({ from: store.state.User.user });
           // console.log(transaction);
         } catch (err) {
-          console.error(err);
+          // console.error(err);
         }
       };
 

@@ -91,7 +91,7 @@ export default {
         const caller = await deguildCoin.methods
           .allowance(realAddress, shopAddress)
           .call();
-        return caller <= balance && caller > 0;
+        return (caller <= balance && caller > 0) || (balance === '0');
       } catch (error) {
         return false;
       }
