@@ -358,7 +358,7 @@ export default {
             // console.log(objForJSON);
             return objForJSON;
           });
-          console.log(jsonArr);
+          // console.log(jsonArr);
           const noUndefined = jsonArr.filter((ele) => ele.status);
           const passed = noUndefined.filter((ele) => ele.status.toLowerCase() === 'true');
           const arrayUser = passed.map((ele) => ele.address);
@@ -368,7 +368,7 @@ export default {
             skillCertificateABI,
             downloading.course.address,
           );
-          console.log(arrayUser, arrayToken, typeId.toString());
+          // console.log(arrayUser, arrayToken, typeId.toString());
 
           await manager.methods
             .batchMint(arrayUser, arrayToken, typeId.toString())
