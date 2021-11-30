@@ -260,7 +260,7 @@ export default {
         const blob = new Blob(['\ufeff', data]);
         const url = URL.createObjectURL(blob);
         downloadLink.href = url;
-        downloadLink.download = `${shopAddress}-${downloading.course.tokenType}-${downloading.round.coursePassword}.csv`;
+        downloadLink.download = `${shopAddress}-${downloading.course.typeAccepted}-${downloading.round.coursePassword}.csv`;
 
         document.body.appendChild(downloadLink);
         downloadLink.click();
@@ -355,10 +355,12 @@ export default {
               objForJSON[jsonObjHeader[index]] = row[index];
               // //console.log(objForJSON[jsonObjHeader[index]]);
             }
-            // //console.log(objForJSON);
+            // console.log(objForJSON);
             return objForJSON;
           });
-          const passed = jsonArr.filter((ele) => ele.status === 'true');
+          console.log(jsonArr);
+          const noUndefined = jsonArr.filter((ele) => ele.status);
+          const passed = noUndefined.filter((ele) => ele.status.toLowerCase() === 'true');
           const arrayUser = passed.map((ele) => ele.address);
           const arrayToken = passed.map((ele) => ele.tokenId);
           const typeId = downloading.course.tokenId;
@@ -366,14 +368,14 @@ export default {
             skillCertificateABI,
             downloading.course.address,
           );
-          // console.log(arrayUser, arrayToken, typeId.toString());
+          console.log(arrayUser, arrayToken, typeId.toString());
 
           await manager.methods
             .batchMint(arrayUser, arrayToken, typeId.toString())
             .send({ from: store.state.User.user });
           // console.log(transaction);
         } catch (err) {
-          // console.error(err);
+          console.error(err);
         }
       };
 
