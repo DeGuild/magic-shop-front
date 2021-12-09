@@ -257,7 +257,6 @@
 </template>
 
 <script>
-
 import {
   defineComponent, reactive, computed, onBeforeMount,
 } from 'vue';
@@ -374,6 +373,7 @@ export default defineComponent({
       ],
       imageSelected: null,
     });
+
     const scrollToAdd = reactive({
       imageData: null,
       fileName: 'Click to upload image',
@@ -424,10 +424,10 @@ export default defineComponent({
     }
 
     /**
-     * Returns whether user is the owner of this shop
+     * Returns the count of tokens of `imageSelected` token type
      *
-     * @param {address} address ethereum address
-     * @return {bool} ownership.
+     * @param {object} imageSelected image selected from the board
+     * @return {string} count of tokens.
      */
     async function getBalanceOf(imageSelected) {
       const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
@@ -443,11 +443,13 @@ export default defineComponent({
         return {};
       }
     }
+
     /**
-     * Returns the url of the certificate address
+     * Returns the title of the certificate from backend
      *
      * @param {address} address The certificate's address
-     * @return {string} certificate's url.
+     * @param {int} tokenType type of the token
+     * @return {string} title of the certificate
      */
     async function getTitle(address, tokenType) {
       const imageUrl = await fetch(
@@ -460,6 +462,12 @@ export default defineComponent({
       return dataUrl.title;
     }
 
+    /**
+     * Returns the name of the certificate address
+     *
+     * @param {address} address The certificate's address
+     * @return {string} certificate manager's name.
+     */
     async function getManagerName(address) {
       const certificateManager = new web3.eth.Contract(
         skillCertificateABI,
@@ -468,11 +476,12 @@ export default defineComponent({
       const caller = await certificateManager.methods.name().call();
       return caller;
     }
+
     /**
-     * Returns name of the address.
+     * Returns whether the shop can mint `address` contract's token (certificates).
      *
-     * @param {address} address The address of any contract using the interface given
-     * @return {string} name of the contract.
+     * @param {address} address The address of certificate manager contract
+     * @return {bool} status of ownership.
      */
     async function isShopOwnPrerequisite(address) {
       const certificateManager = new web3.eth.Contract(
@@ -484,10 +493,9 @@ export default defineComponent({
     }
 
     /**
-     * Returns whether user is the owner of this shop
+     * Display data of the chosen item on the board
      *
-     * @param {address} address ethereum address
-     * @return {bool} ownership.
+     * @param {int} imageIdx index of image
      */
     async function choosing(imageIdx) {
       state.imageSelected = state.images[imageIdx];
@@ -514,10 +522,7 @@ export default defineComponent({
     }
 
     /**
-     * Returns whether user is the owner of this shop
-     *
-     * @param {address} address ethereum address
-     * @return {bool} ownership.
+     * Display a dialouge about the certificate when clicking the more info button
      */
     async function moreInfo() {
       const { prerequisite, prerequisiteId } = state.imageSelected;
@@ -536,6 +541,12 @@ export default defineComponent({
         store.dispatch('User/setDialog', `${title} by ${name} is required`);
       }
     }
+
+    /**
+     * Fetch magic scrolls based from `pageidx`
+     *
+     * @param {int} pageidx index of page
+     */
     async function fetchAllMagicScrolls(pageidx) {
       const response = await fetch(
         `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/${shopAddress}/${store.state.User.user}/${pageidx}`,
@@ -545,7 +556,9 @@ export default defineComponent({
       const magicScrolls = await response.json();
 
       const nextIsPossible = await fetch(
-        `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/${shopAddress}/${store.state.User.user}/${pageidx + 1}`,
+        `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/${shopAddress}/${
+          store.state.User.user
+        }/${pageidx + 1}`,
         { mode: 'cors' },
       );
 
@@ -557,11 +570,11 @@ export default defineComponent({
 
       return magicScrolls;
     }
+
     /**
-     * Returns whether user is the owner of this shop
+     * Send a transaction to buy the magic scroll
      *
-     * @param {address} address ethereum address
-     * @return {bool} ownership.
+     * @return {object} transaction info or null.
      */
     async function buy() {
       state.buyButton = "<i class='fas fa-spinner fa-spin'></i>";
@@ -593,10 +606,13 @@ export default defineComponent({
 
         store.dispatch('User/setDialog', 'Transaction rejected!');
 
-        return false;
+        return null;
       }
     }
 
+    /**
+     * As an owner, it will show the add scroll components
+     */
     function addScrollToggle() {
       state.addScroll = true;
       store.dispatch(
@@ -604,21 +620,45 @@ export default defineComponent({
         'What kind of scroll would you like to add?',
       );
     }
+
+    /**
+     * As an owner, adding scroll will only have exam
+     */
     function selectExam() {
       scrollToAdd.hasLesson = false;
     }
+
+    /**
+     * As an owner, adding scroll will have both exam and lesson
+     */
     function selectBoth() {
       scrollToAdd.hasLesson = true;
     }
+
+    /**
+     * As an owner, it will toggle having prerequisite status of the adding scroll
+     */
     function selectHasPrereq() {
       scrollToAdd.hasPrereq = !scrollToAdd.hasPrereq;
     }
+
+    /**
+     * As an owner, it will go to the second page of scroll adding
+     */
     function goNext() {
       state.nextPage = true;
     }
+
+    /**
+     * As an owner, it will go to the first page of scroll adding
+     */
     function goBack() {
       state.nextPage = false;
     }
+
+    /**
+     * it will show the next page when browsing scrolls
+     */
     async function showNext() {
       state.pageIdx += 1;
       store.dispatch('User/setFetching', true);
@@ -626,6 +666,10 @@ export default defineComponent({
       store.dispatch('User/setMagicScrolls', scrollsData);
       setTimeout(() => store.dispatch('User/setFetching', false), 100);
     }
+
+    /**
+     * it will show the previous page when browsing scrolls
+     */
     async function showPrevious() {
       state.pageIdx -= 1;
       store.dispatch('User/setFetching', true);
@@ -633,6 +677,10 @@ export default defineComponent({
       store.dispatch('User/setMagicScrolls', scrollsData);
       setTimeout(() => store.dispatch('User/setFetching', false), 100);
     }
+
+    /**
+     * it will cancel scroll adding
+     */
     function cancelAdd() {
       if (!state.adding) {
         store.dispatch('User/setDialog', 'Cancelled! No scroll will be added!');
@@ -640,6 +688,10 @@ export default defineComponent({
       state.addScroll = false;
     }
 
+    /**
+     * As an owner, send a transaction to contract to add scroll
+     * and sign the token to upload data to the off-chain
+     */
     async function addScroll() {
       store.dispatch('User/setFetching', true);
       scrollToAdd.addButton = "<i class='fas fa-spinner fa-spin'></i>";
@@ -679,7 +731,6 @@ export default defineComponent({
           'state_changed',
           () => {
             // Observe state change events such as progress, pause, and resume
-
           },
           () => {
             // Handle unsuccessful uploads
@@ -765,6 +816,9 @@ export default defineComponent({
       return false;
     }
 
+    /**
+     * Show all scrolls
+     */
     function showAll() {
       state.showAll = true;
       state.showExam = false;
@@ -775,6 +829,10 @@ export default defineComponent({
         ? store.state.User.scrollList : []));
       store.dispatch('User/setDialog', 'All scrolls are shown.');
     }
+
+    /**
+     * Show lesson included scrolls
+     */
     function showBoth() {
       state.showBoth = true;
       state.showExam = false;
@@ -790,6 +848,9 @@ export default defineComponent({
       );
     }
 
+    /**
+     * Show exam only scrolls
+     */
     function showExam() {
       state.showExam = true;
       state.showBoth = false;
