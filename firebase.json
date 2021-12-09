@@ -1,0 +1,12 @@
+{
+  "hosting": {
+    "public": "dist",
+    "site": "mona-magic-shop",
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
