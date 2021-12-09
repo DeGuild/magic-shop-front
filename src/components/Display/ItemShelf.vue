@@ -257,8 +257,6 @@
 </template>
 
 <script>
-/* eslint-disable no-unused-vars */
-/* eslint-disable max-len */
 
 import {
   defineComponent, reactive, computed, onBeforeMount,
@@ -274,7 +272,6 @@ import Web3Token from 'web3-token';
 
 const Web3 = require('web3');
 
-// const shopAddress = '0xFA0Db8E0f8138A1675507113392839576eD3052c';
 const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/V2/IMagicScrolls+.sol/IMagicScrollsPlus.json').abi;
 const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/V2/ISkillCertificate+.sol/ISkillCertificatePlus.json').abi;
 require('dotenv').config();
@@ -298,7 +295,8 @@ export default defineComponent({
       nextPage: false,
       buying: false,
       adding: false,
-      scrollSelected: computed(() => (store.state.User.selectedScroll ? store.state.User.selectedScroll : null)),
+      scrollSelected: computed(() => (store.state.User.selectedScroll
+        ? store.state.User.selectedScroll : null)),
       loading: computed(() => store.state.User.fetching),
       pageIdx: 0,
       hasNext: computed(() => store.state.User.scrollToFetch),
@@ -393,9 +391,8 @@ export default defineComponent({
     });
 
     function previewName(event) {
-      // //console.log('File changed!');
       const file = event.target.files[0];
-      // console.log(file);
+
       scrollToAdd.imageData = file;
       scrollToAdd.fileName = file.name;
 
@@ -434,10 +431,9 @@ export default defineComponent({
         const caller = await magicShop.methods
           .balanceOfOne(realAddress, imageSelected.tokenId)
           .call();
-        // //console.log(caller);
+
         return caller;
       } catch (error) {
-        // console.error('Not purchasable');
         return {};
       }
     }
@@ -454,7 +450,7 @@ export default defineComponent({
       );
 
       const dataUrl = await imageUrl.json();
-      // //console.log(dataUrl.url);
+
       return dataUrl.title;
     }
 
@@ -489,7 +485,7 @@ export default defineComponent({
      */
     async function choosing(imageIdx) {
       state.imageSelected = state.images[imageIdx];
-      // console.log(state.imageSelected);
+
       store.dispatch(
         'User/setDialog',
         'Counting your owned scrolls for this one...',
@@ -521,8 +517,7 @@ export default defineComponent({
       const { prerequisite, prerequisiteId } = state.imageSelected;
       const confirm = await isShopOwnPrerequisite(prerequisite);
       const type = await getTokenType(prerequisite, prerequisiteId);
-      // //console.log(state.imageSelected);
-      // console.log(confirm, type, prerequisite);
+
       if (confirm) {
         await choosing(type);
         store.dispatch(
@@ -536,7 +531,6 @@ export default defineComponent({
       }
     }
     async function fetchAllMagicScrolls(pageidx) {
-      // //console.log(nextToFetch);
       const response = await fetch(
         `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/${shopAddress}/${store.state.User.user}/${pageidx}`,
         { mode: 'cors' },
@@ -554,8 +548,7 @@ export default defineComponent({
       } else {
         store.dispatch('User/setMagicScrollToFetch', false);
       }
-      // //console.log(magicScrolls);
-      // //console.log(next);
+
       return magicScrolls;
     }
     /**
@@ -678,29 +671,19 @@ export default defineComponent({
         // 3. Completion observer, called on successful completion
         uploadTask.on(
           'state_changed',
-          (snapshot) => {
+          () => {
             // Observe state change events such as progress, pause, and resume
-            // //console.log(`Upload is ${progress}% done`);
-            // eslint-disable-next-line default-case
-            switch (snapshot.state) {
-              case 'paused':
-                // //console.log('Upload is paused');
-                break;
-              case 'running':
-                // //console.log('Upload is running');
-                break;
-            }
+
           },
-          (error) => {
+          () => {
             // Handle unsuccessful uploads
-            console.error(error.message);
+
             store.dispatch('User/setFetching', false);
           },
           async () => {
             getDownloadURL(uploadTask.snapshot.ref).then(
               async (downloadURL) => {
                 try {
-                  // console.log('File available at', downloadURL);
                   scrollToAdd.picture = downloadURL;
                   const transaction = await magicShop.methods
                     .addScroll(
@@ -711,8 +694,6 @@ export default defineComponent({
                       price,
                     )
                     .send({ from: realAddress });
-
-                  // console.log(transaction);
 
                   const requestOptions = {
                     method: 'POST',
@@ -766,7 +747,6 @@ export default defineComponent({
           },
         );
       } catch (error) {
-        // console.log(error);
         scrollToAdd.addButton = 'Add';
         state.adding = false;
         store.dispatch('User/setFetching', false);
@@ -785,7 +765,8 @@ export default defineComponent({
       state.showBoth = false;
       state.pageIdx = 0;
 
-      state.images = computed(() => (store.state.User.scrollList ? store.state.User.scrollList : []));
+      state.images = computed(() => (store.state.User.scrollList
+        ? store.state.User.scrollList : []));
       store.dispatch('User/setDialog', 'All scrolls are shown.');
     }
     function showBoth() {
@@ -802,6 +783,7 @@ export default defineComponent({
         'These scrolls will teach you skills and let you earn certificate.',
       );
     }
+
     function showExam() {
       state.showExam = true;
       state.showBoth = false;
@@ -816,6 +798,7 @@ export default defineComponent({
         'These scrolls let you earn certificate, but you do not get to learn the lessons',
       );
     }
+
     onBeforeMount(async () => {
       store.dispatch('User/setFetching', true);
 

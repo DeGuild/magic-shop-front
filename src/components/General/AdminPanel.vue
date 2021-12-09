@@ -103,10 +103,8 @@
 </template>
 
 <script>
-/* eslint-disable no-await-in-loop */
 
 import { useStore } from 'vuex';
-// import { useRoute } from 'vue-router';
 
 import { reactive, computed, onBeforeMount } from 'vue';
 import Web3Token from 'web3-token';
@@ -116,7 +114,7 @@ const Web3 = require('web3');
 /**
  * Using relative path, just clone the git beside this project directory and compile to run
  */
-// eslint-disable-next-line no-unused-vars
+
 require('dotenv').config();
 
 const shopAddress = process.env.VUE_APP_SHOP_ADDRESS;
@@ -126,7 +124,6 @@ export default {
   name: 'AdminPanel',
   setup() {
     const store = useStore();
-    // const route = useRoute();
 
     const user = computed(() => store.state.User.user);
 
@@ -157,7 +154,6 @@ export default {
 
       const skillsWithType = await responseNew.json();
       state.courses = skillsWithType;
-      // console.log(skillsWithType);
 
       store.dispatch('User/setFetching', false);
     }
@@ -173,8 +169,6 @@ export default {
           (msg) => web3.eth.personal.sign(msg, realAddress),
           '1d',
         );
-        // console.log(token);
-        // console.log(downloading.course);
 
         const requestOptions = {
           method: 'GET',
@@ -188,7 +182,7 @@ export default {
         );
 
         const rounds = await response.json();
-        // console.log(rounds);
+
         state.rounds = rounds;
 
         store.dispatch('User/setFetching', false);
@@ -205,7 +199,6 @@ export default {
         (msg) => web3.eth.personal.sign(msg, realAddress),
         '1d',
       );
-      // console.log(token);
 
       const requestOptions = {
         method: 'POST',
@@ -226,7 +219,7 @@ export default {
       );
 
       await response.json();
-      // console.log(rounds);
+
       await getRound();
 
       store.dispatch('User/setFetching', false);
@@ -241,7 +234,7 @@ export default {
           (msg) => web3.eth.personal.sign(msg, realAddress),
           '1d',
         );
-        // console.log(token);
+
         const requestOptions = {
           method: 'GET',
           headers: {
@@ -255,7 +248,7 @@ export default {
           requestOptions,
         );
         const data = await response.text();
-        // console.log(response);
+
         const downloadLink = document.createElement('a');
         const blob = new Blob(['\ufeff', data]);
         const url = URL.createObjectURL(blob);
@@ -267,7 +260,6 @@ export default {
         document.body.removeChild(downloadLink);
         store.dispatch('User/setFetching', false);
       } catch (err) {
-        // console.error(err);
         store.dispatch('User/setFetching', false);
       }
     }
@@ -344,21 +336,19 @@ export default {
       fr.onload = async () => {
         try {
           const csvArray = CSVToArray(fr.result);
-          // console.log(csvArray);
+
           const jsonObjHeader = [].concat.apply(...csvArray.slice(0, 1));
-          // console.log(jsonObjHeader);
 
           const jsonArr = csvArray.slice(1).map((row) => {
             const objForJSON = {};
-            // //console.log(row);
+
             for (let index = 0; index < jsonObjHeader.length; index += 1) {
               objForJSON[jsonObjHeader[index]] = row[index];
-              // //console.log(objForJSON[jsonObjHeader[index]]);
             }
-            // console.log(objForJSON);
+
             return objForJSON;
           });
-          // console.log(jsonArr);
+
           const noUndefined = jsonArr.filter((ele) => ele.status);
           const passed = noUndefined.filter((ele) => ele.status.toLowerCase() === 'true');
           const arrayUser = passed.map((ele) => ele.address);
@@ -368,14 +358,13 @@ export default {
             skillCertificateABI,
             downloading.course.address,
           );
-          // console.log(arrayUser, arrayToken, typeId.toString());
 
           await manager.methods
             .batchMint(arrayUser, arrayToken, typeId.toString())
             .send({ from: store.state.User.user });
-          // console.log(transaction);
+          return true;
         } catch (err) {
-          // console.error(err);
+          return false;
         }
       };
 
@@ -383,13 +372,11 @@ export default {
     }
 
     function previewCSV(event) {
-      // //console.log('File changed!');
       const file = event.target.files[0];
-      // console.log(file);
-      // state.picture = previewing;
       state.csvFile = file;
       state.csvName = file.name;
     }
+
     onBeforeMount(async () => {
       await fetchSetup();
     });

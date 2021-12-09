@@ -10,10 +10,8 @@
 </template>
 
 <script>
-/* eslint-disable no-await-in-loop */
 
 import { useStore } from 'vuex';
-// import { useRoute } from 'vue-router';
 
 import { reactive, computed } from 'vue';
 
@@ -22,7 +20,6 @@ const Web3 = require('web3');
 /**
  * Using relative path, just clone the git beside this project directory and compile to run
  */
-// eslint-disable-next-line no-unused-vars
 require('dotenv').config();
 
 const shopAddress = process.env.VUE_APP_SHOP_ADDRESS;
@@ -33,8 +30,6 @@ export default {
   name: 'ApproveWallet',
   setup() {
     const store = useStore();
-    // const route = useRoute();
-
     const user = computed(() => store.state.User.user);
 
     const state = reactive({
@@ -66,10 +61,7 @@ export default {
     }
 
     /**
-     * Returns whether user is the owner of this shop
-     *
-     * @param {address} address ethereum address
-     * @return {bool} ownership.
+     * Send a transaction to approve DGC contract
      */
     async function approve() {
       state.primary = "<i class='fas fa-spinner fa-spin'></i>";
@@ -82,7 +74,6 @@ export default {
         await deguildCoin.methods
           .approve(shopAddress, balance)
           .send({ from: realAddress });
-        // console.log(caller);
         const approval = await hasApproval(realAddress);
         store.dispatch('User/setApproval', approval);
         store.dispatch('User/setFetching', false);

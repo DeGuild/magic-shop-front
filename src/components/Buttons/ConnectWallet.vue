@@ -10,8 +10,6 @@
 </template>
 
 <script>
-/* eslint-disable no-await-in-loop */
-
 import { useStore } from 'vuex';
 import { useRouter, useRoute } from 'vue-router';
 
@@ -22,14 +20,13 @@ const Web3 = require('web3');
 /**
  * Using relative path, just clone the git beside this project directory and compile to run
  */
-// eslint-disable-next-line no-unused-vars
 require('dotenv').config();
 
 const shopAddress = process.env.VUE_APP_SHOP_ADDRESS;
 const dgcAddress = process.env.VUE_APP_DGC_ADDRESS;
 const dgcABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/Tokens/DeGuildCoinERC20.sol/DeGuildCoinERC20.json').abi;
 const ownerABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/@openzeppelin/contracts/access/Ownable.sol/Ownable.json').abi;
-// DeGuild-MG-CS-Token-contracts/artifacts/@openzeppelin/contracts/access/Ownable.sol/Ownable.json
+
 export default {
   name: 'ConnectWallet',
   setup() {
@@ -38,6 +35,7 @@ export default {
     const router = useRouter();
 
     const user = computed(() => store.state.User.user);
+
     function shortenedAddress(address) {
       if (!address) {
         return "<i class='fas fa-spinner fa-spin'></i>";
@@ -72,7 +70,6 @@ export default {
         const caller = await magicShop.methods.owner().call();
         return caller === realAddress;
       } catch (error) {
-        // console.error('Not purchasable');
         return false;
       }
     }
@@ -181,7 +178,6 @@ export default {
           );
           store.dispatch('User/setFetching', true);
 
-          // console.log(balance);
           store.dispatch('User/setApproval', approve);
           if (!approve) {
             store.dispatch(
@@ -190,7 +186,6 @@ export default {
             );
           }
           store.dispatch('User/setFetching', false);
-          // console.log(store.state.User.scrollList);
           store.dispatch(
             'User/setDialog',
             'Great! So, what would you like to buy?',
@@ -198,7 +193,7 @@ export default {
 
           return true;
         } catch (error) {
-          // console.log(error);
+          return false;
         }
       } else {
         router.push('/no-provider');

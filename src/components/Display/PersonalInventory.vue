@@ -157,8 +157,6 @@
 </template>
 
 <script>
-/* eslint-disable no-unused-vars */
-/* eslint-disable max-len */
 
 import {
   defineComponent, reactive, computed, onBeforeMount,
@@ -167,13 +165,10 @@ import { useStore } from 'vuex';
 
 const Web3 = require('web3');
 
-// const shopAddress = '0xFA0Db8E0f8138A1675507113392839576eD3052c';
 const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/V2/IMagicScrolls+.sol/IMagicScrollsPlus.json').abi;
-const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/V2/ISkillCertificate+.sol/ISkillCertificatePlus.json').abi;
 require('dotenv').config();
 
 const shopAddress = process.env.VUE_APP_SHOP_ADDRESS;
-const noImg = require('@/assets/no-url.jpg');
 
 export default defineComponent({
   name: 'PersonalInventory',
@@ -191,7 +186,8 @@ export default defineComponent({
       nextPage: false,
       buying: false,
       adding: false,
-      scrollSelected: computed(() => (store.state.User.selectedScroll ? store.state.User.selectedScroll : null)),
+      scrollSelected: computed(() => (store.state.User.selectedScroll
+        ? store.state.User.selectedScroll : null)),
       loading: computed(() => store.state.User.fetching),
       pageIdx: 0,
       hasNext: computed(() => store.state.User.scrollToFetch),
@@ -269,59 +265,7 @@ export default defineComponent({
       ],
       imageSelected: null,
     });
-    /**
-     * Returns name of the address.
-     *
-     * @param {address} address The address of any contract using the interface given
-     * @return {string} name of the contract.
-     */
-    async function getName(address) {
-      const certificateManager = new web3.eth.Contract(
-        skillCertificateABI,
-        address,
-      );
-      const caller = await certificateManager.methods.name().call();
-      return caller;
-    }
 
-    /**
-     * Returns name of the address.
-     *
-     * @param {address} address The address of any contract using the interface given
-     * @return {string} name of the contract.
-     */
-    async function getTokenType(address, prerequisiteId) {
-      const certificateManager = new web3.eth.Contract(
-        skillCertificateABI,
-        address,
-      );
-      const caller = await certificateManager.methods
-        .typeAccepted(prerequisiteId)
-        .call();
-      return caller;
-    }
-
-    /**
-     * Returns whether user is the owner of this shop
-     *
-     * @param {address} address ethereum address
-     * @return {bool} ownership.
-     */
-    async function getBalanceOf(imageSelected) {
-      const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
-      const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
-
-      try {
-        const caller = await magicShop.methods
-          .balanceOfOne(realAddress, imageSelected.tokenId)
-          .call();
-        // console.log(caller);
-        return parseInt(caller, 10);
-      } catch (error) {
-        // console.error('Not purchasable');
-        return {};
-      }
-    }
     function consume() {
       state.consuming = true;
     }
@@ -334,12 +278,11 @@ export default defineComponent({
      */
     async function choosing(imageIdx) {
       state.imageSelected = state.images[imageIdx];
-      // console.log(state.imageSelected);
+
       state.own = state.imageSelected.own;
     }
 
     async function fetchAllMagicScrolls(pageidx) {
-      // console.log(nextToFetch);
       const response = await fetch(
         `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/inventory/${shopAddress}/${store.state.User.user}/${pageidx}`,
         { mode: 'cors' },
@@ -358,7 +301,7 @@ export default defineComponent({
       } else {
         store.dispatch('User/setMagicScrollToFetch', false);
       }
-      // console.log(next);
+
       return magicScrolls;
     }
 
@@ -372,14 +315,13 @@ export default defineComponent({
         const tranasction = await magicShop.methods
           .consume(state.imageSelected.tokenId, state.passcode)
           .send({ from: realAddress });
-        // console.log(tranasction);
+
         store.dispatch('User/setFetching', false);
 
         return tranasction;
       } catch (error) {
         store.dispatch('User/setFetching', false);
 
-        // console.error('Not purchasable');
         return {};
       }
     }
@@ -407,7 +349,8 @@ export default defineComponent({
       state.showBoth = false;
       state.pageIdx = 0;
 
-      state.images = computed(() => (store.state.User.scrollList ? store.state.User.scrollList : []));
+      state.images = computed(() => (store.state.User.scrollList
+        ? store.state.User.scrollList : []));
     }
     function showBoth() {
       state.showBoth = true;
