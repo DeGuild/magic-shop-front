@@ -45,8 +45,7 @@ export default {
     const store = useStore();
     const user = computed(() => store.state.User.user);
     const wallet = computed(() => store.state.User.approval);
-    // console.log(store.state.User.user);
-    // console.log(user);
+
     const siteData = reactive({
       title: "Mona's Magic Shop - Shop",
       description: 'Courses for everyone',

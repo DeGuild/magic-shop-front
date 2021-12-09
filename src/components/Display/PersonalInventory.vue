@@ -43,7 +43,7 @@
     <button
       class="Button consuming cancel"
       v-if="state.consuming"
-      v-on:click="state.loading ? null : cancelAdd()"
+      v-on:click="state.loading ? null : cancelConsume()"
     >
       Cancel
     </button>
@@ -157,8 +157,6 @@
 </template>
 
 <script>
-/* eslint-disable no-unused-vars */
-/* eslint-disable max-len */
 
 import {
   defineComponent, reactive, computed, onBeforeMount,
@@ -167,13 +165,10 @@ import { useStore } from 'vuex';
 
 const Web3 = require('web3');
 
-// const shopAddress = '0xFA0Db8E0f8138A1675507113392839576eD3052c';
 const magicScrollABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/MagicShop/V2/IMagicScrolls+.sol/IMagicScrollsPlus.json').abi;
-const skillCertificateABI = require('../../../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/SkillCertificates/V2/ISkillCertificate+.sol/ISkillCertificatePlus.json').abi;
 require('dotenv').config();
 
 const shopAddress = process.env.VUE_APP_SHOP_ADDRESS;
-const noImg = require('@/assets/no-url.jpg');
 
 export default defineComponent({
   name: 'PersonalInventory',
@@ -191,7 +186,8 @@ export default defineComponent({
       nextPage: false,
       buying: false,
       adding: false,
-      scrollSelected: computed(() => (store.state.User.selectedScroll ? store.state.User.selectedScroll : null)),
+      scrollSelected: computed(() => (store.state.User.selectedScroll
+        ? store.state.User.selectedScroll : null)),
       loading: computed(() => store.state.User.fetching),
       pageIdx: 0,
       hasNext: computed(() => store.state.User.scrollToFetch),
@@ -269,77 +265,31 @@ export default defineComponent({
       ],
       imageSelected: null,
     });
-    /**
-     * Returns name of the address.
-     *
-     * @param {address} address The address of any contract using the interface given
-     * @return {string} name of the contract.
-     */
-    async function getName(address) {
-      const certificateManager = new web3.eth.Contract(
-        skillCertificateABI,
-        address,
-      );
-      const caller = await certificateManager.methods.name().call();
-      return caller;
-    }
 
     /**
-     * Returns name of the address.
-     *
-     * @param {address} address The address of any contract using the interface given
-     * @return {string} name of the contract.
+     * Display consume component
      */
-    async function getTokenType(address, prerequisiteId) {
-      const certificateManager = new web3.eth.Contract(
-        skillCertificateABI,
-        address,
-      );
-      const caller = await certificateManager.methods
-        .typeAccepted(prerequisiteId)
-        .call();
-      return caller;
-    }
-
-    /**
-     * Returns whether user is the owner of this shop
-     *
-     * @param {address} address ethereum address
-     * @return {bool} ownership.
-     */
-    async function getBalanceOf(imageSelected) {
-      const magicShop = new web3.eth.Contract(magicScrollABI, shopAddress);
-      const realAddress = web3.utils.toChecksumAddress(store.state.User.user);
-
-      try {
-        const caller = await magicShop.methods
-          .balanceOfOne(realAddress, imageSelected.tokenId)
-          .call();
-        // console.log(caller);
-        return parseInt(caller, 10);
-      } catch (error) {
-        // console.error('Not purchasable');
-        return {};
-      }
-    }
     function consume() {
       state.consuming = true;
     }
 
     /**
-     * Returns whether user is the owner of this shop
+     * Display data of the chosen item on the board
      *
-     * @param {address} address ethereum address
-     * @return {bool} ownership.
+     * @param {int} imageIdx index of image
      */
     async function choosing(imageIdx) {
       state.imageSelected = state.images[imageIdx];
-      // console.log(state.imageSelected);
+
       state.own = state.imageSelected.own;
     }
 
+    /**
+     * Fetch magic scrolls based from `pageidx`
+     *
+     * @param {int} pageidx index of page
+     */
     async function fetchAllMagicScrolls(pageidx) {
-      // console.log(nextToFetch);
       const response = await fetch(
         `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/inventory/${shopAddress}/${store.state.User.user}/${pageidx}`,
         { mode: 'cors' },
@@ -358,10 +308,15 @@ export default defineComponent({
       } else {
         store.dispatch('User/setMagicScrollToFetch', false);
       }
-      // console.log(next);
+
       return magicScrolls;
     }
 
+    /**
+     * Send a transaction to consume the magic scroll
+     *
+     * @return {object} transaction info or empty object.
+     */
     async function sendConsume() {
       store.dispatch('User/setFetching', true);
 
@@ -372,17 +327,20 @@ export default defineComponent({
         const tranasction = await magicShop.methods
           .consume(state.imageSelected.tokenId, state.passcode)
           .send({ from: realAddress });
-        // console.log(tranasction);
+
         store.dispatch('User/setFetching', false);
 
         return tranasction;
       } catch (error) {
         store.dispatch('User/setFetching', false);
 
-        // console.error('Not purchasable');
         return {};
       }
     }
+
+    /**
+     * it will show the next page when browsing scrolls
+     */
     async function showNext() {
       state.pageIdx += 1;
       store.dispatch('User/setFetching', true);
@@ -390,6 +348,10 @@ export default defineComponent({
       store.dispatch('User/setMagicScrolls', scrollsData);
       setTimeout(() => store.dispatch('User/setFetching', false), 100);
     }
+
+    /**
+     * it will show the previous page when browsing scrolls
+     */
     async function showPrevious() {
       state.pageIdx -= 1;
       store.dispatch('User/setFetching', true);
@@ -398,17 +360,30 @@ export default defineComponent({
       store.dispatch('User/setMagicScrolls', scrollsData);
       setTimeout(() => store.dispatch('User/setFetching', false), 100);
     }
-    function cancelAdd() {
+
+    /**
+     * it will cancel scroll consumption
+     */
+    function cancelConsume() {
       state.consuming = false;
     }
+
+    /**
+     * Show all scrolls
+     */
     function showAll() {
       state.showAll = true;
       state.showExam = false;
       state.showBoth = false;
       state.pageIdx = 0;
 
-      state.images = computed(() => (store.state.User.scrollList ? store.state.User.scrollList : []));
+      state.images = computed(() => (store.state.User.scrollList
+        ? store.state.User.scrollList : []));
     }
+
+    /**
+     * Show lesson included scrolls
+     */
     function showBoth() {
       state.showBoth = true;
       state.showExam = false;
@@ -419,6 +394,10 @@ export default defineComponent({
         ? store.state.User.scrollList.filter((obj) => obj.hasLesson)
         : []));
     }
+
+    /**
+     * Show exam only scrolls
+     */
     function showExam() {
       state.showExam = true;
       state.showBoth = false;
@@ -429,6 +408,7 @@ export default defineComponent({
         ? store.state.User.scrollList.filter((obj) => !obj.hasLesson)
         : []));
     }
+
     onBeforeMount(async () => {
       store.dispatch('User/setFetching', true);
 
@@ -444,7 +424,7 @@ export default defineComponent({
       showAll,
       showBoth,
       showExam,
-      cancelAdd,
+      cancelConsume,
       sendConsume,
       showNext,
       showPrevious,

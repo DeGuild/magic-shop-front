@@ -10,7 +10,6 @@ export default {
 </script>
 <style scoped lang="scss">
 .overlay {
-  /* Rectangle 9939 */
 
   position: absolute;
   width: 53.802vw;
@@ -39,7 +38,7 @@ export default {
     font-size: 2.5vw;
     line-height: 3.646vw;
     color: #ffffff;
-    // background-color: red;
-  }
+
+}
 }
 </style>

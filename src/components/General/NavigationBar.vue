@@ -15,7 +15,7 @@
 </template>
 
 <script>
-// import { useStore } from 'vuex';
+
 import { useRoute } from 'vue-router';
 
 import { defineComponent, reactive, computed } from 'vue';
@@ -23,7 +23,6 @@ import { defineComponent, reactive, computed } from 'vue';
 export default defineComponent({
   name: 'NavBar',
   setup() {
-    // const store = useStore();
     const route = useRoute();
     const state = reactive({
       name: null,

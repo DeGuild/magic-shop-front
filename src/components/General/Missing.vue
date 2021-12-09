@@ -12,9 +12,7 @@
 <script>
 import { useStore } from 'vuex';
 
-import {
-  defineComponent, reactive, computed,
-} from 'vue';
+import { defineComponent, reactive, computed } from 'vue';
 
 export default defineComponent({
   name: 'Missing',
@@ -43,7 +41,6 @@ export default defineComponent({
   background-size: cover;
 }
 .dialog-text {
-  /* Share your certificate and show your skill! */
   position: absolute;
   width: 60vw;
   height: 3vw;
@@ -65,7 +62,6 @@ export default defineComponent({
 }
 
 .btn {
-
   display: flex;
   flex-direction: row;
   justify-content: center;
