@@ -43,7 +43,7 @@
     <button
       class="Button consuming cancel"
       v-if="state.consuming"
-      v-on:click="state.loading ? null : cancelAdd()"
+      v-on:click="state.loading ? null : cancelConsume()"
     >
       Cancel
     </button>
@@ -266,15 +266,17 @@ export default defineComponent({
       imageSelected: null,
     });
 
+    /**
+     * Display consume component
+     */
     function consume() {
       state.consuming = true;
     }
 
     /**
-     * Returns whether user is the owner of this shop
+     * Display data of the chosen item on the board
      *
-     * @param {address} address ethereum address
-     * @return {bool} ownership.
+     * @param {int} imageIdx index of image
      */
     async function choosing(imageIdx) {
       state.imageSelected = state.images[imageIdx];
@@ -282,6 +284,11 @@ export default defineComponent({
       state.own = state.imageSelected.own;
     }
 
+    /**
+     * Fetch magic scrolls based from `pageidx`
+     *
+     * @param {int} pageidx index of page
+     */
     async function fetchAllMagicScrolls(pageidx) {
       const response = await fetch(
         `https://us-central1-deguild-2021.cloudfunctions.net/app/magicScrolls/inventory/${shopAddress}/${store.state.User.user}/${pageidx}`,
@@ -305,6 +312,11 @@ export default defineComponent({
       return magicScrolls;
     }
 
+    /**
+     * Send a transaction to consume the magic scroll
+     *
+     * @return {object} transaction info or empty object.
+     */
     async function sendConsume() {
       store.dispatch('User/setFetching', true);
 
@@ -325,6 +337,10 @@ export default defineComponent({
         return {};
       }
     }
+
+    /**
+     * it will show the next page when browsing scrolls
+     */
     async function showNext() {
       state.pageIdx += 1;
       store.dispatch('User/setFetching', true);
@@ -332,6 +348,10 @@ export default defineComponent({
       store.dispatch('User/setMagicScrolls', scrollsData);
       setTimeout(() => store.dispatch('User/setFetching', false), 100);
     }
+
+    /**
+     * it will show the previous page when browsing scrolls
+     */
     async function showPrevious() {
       state.pageIdx -= 1;
       store.dispatch('User/setFetching', true);
@@ -340,9 +360,17 @@ export default defineComponent({
       store.dispatch('User/setMagicScrolls', scrollsData);
       setTimeout(() => store.dispatch('User/setFetching', false), 100);
     }
-    function cancelAdd() {
+
+    /**
+     * it will cancel scroll consumption
+     */
+    function cancelConsume() {
       state.consuming = false;
     }
+
+    /**
+     * Show all scrolls
+     */
     function showAll() {
       state.showAll = true;
       state.showExam = false;
@@ -352,6 +380,10 @@ export default defineComponent({
       state.images = computed(() => (store.state.User.scrollList
         ? store.state.User.scrollList : []));
     }
+
+    /**
+     * Show lesson included scrolls
+     */
     function showBoth() {
       state.showBoth = true;
       state.showExam = false;
@@ -362,6 +394,10 @@ export default defineComponent({
         ? store.state.User.scrollList.filter((obj) => obj.hasLesson)
         : []));
     }
+
+    /**
+     * Show exam only scrolls
+     */
     function showExam() {
       state.showExam = true;
       state.showBoth = false;
@@ -372,6 +408,7 @@ export default defineComponent({
         ? store.state.User.scrollList.filter((obj) => !obj.hasLesson)
         : []));
     }
+
     onBeforeMount(async () => {
       store.dispatch('User/setFetching', true);
 
@@ -387,7 +424,7 @@ export default defineComponent({
       showAll,
       showBoth,
       showExam,
-      cancelAdd,
+      cancelConsume,
       sendConsume,
       showNext,
       showPrevious,

@@ -574,7 +574,7 @@ export default defineComponent({
     /**
      * Send a transaction to buy the magic scroll
      *
-     * @return {object} transaction info or null.
+     * @return {object} transaction info or empty object.
      */
     async function buy() {
       state.buyButton = "<i class='fas fa-spinner fa-spin'></i>";
@@ -606,7 +606,7 @@ export default defineComponent({
 
         store.dispatch('User/setDialog', 'Transaction rejected!');
 
-        return null;
+        return {};
       }
     }
 
