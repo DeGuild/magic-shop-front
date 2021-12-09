@@ -390,6 +390,11 @@ export default defineComponent({
       desc: null,
     });
 
+    /**
+     * Preview the name of the image and picture
+     *
+     * @param {object} event file event from input
+     */
     function previewName(event) {
       const file = event.target.files[0];
 
@@ -401,10 +406,11 @@ export default defineComponent({
     }
 
     /**
-     * Returns name of the address.
+     * Returns the token type required in this shop
      *
-     * @param {address} address The address of any contract using the interface given
-     * @return {string} name of the contract.
+     * @param {address} address The address of certificate manager
+     * @param {string} prerequisiteId the token Id of a prerequisite certificate
+     * @return {string} token type
      */
     async function getTokenType(address, prerequisiteId) {
       const certificateManager = new web3.eth.Contract(
